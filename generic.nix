@@ -43,6 +43,12 @@ stdenv.mkDerivation rec {
     cp -r {$src,$out}/share/
   '';
 
+  # postInstall = ''
+  #   # Make boost header paths relative so that they are not runtime dependencies
+  #   cd "$dev" && find include \( -name '*.hpp' -or -name '*.h' -or -name '*.ipp' \) \
+  #     -exec sed '1i#line 1 "{}"' -i '{}' \;
+  # '';
+
   meta = with stdenv.lib; {
     description = "libtorch";
     homepage = https://pytorch.org/;
