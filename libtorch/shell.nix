@@ -1,6 +1,7 @@
+{ pkgs ? import ../pin/nixpkgs.nix {} }:
+
 let
-  pkgs = import <nixpkgs> {};
-  build = pkgs.callPackage ./build.nix { };
+  build = pkgs.callPackage ./release.nix { };
 in
 pkgs.mkShell {
   buildInputs = [
