@@ -17,7 +17,8 @@ in
   };
   libtorch_cudatoolkit_9_0 = callGpu {
     version = "1.1";
-    sha256 = "1y1kjqnqmac5cfl2cgdk2py5pwcxsyr6g2bk09spjs2d6g9cszld";
+    # sha256 = "1y1kjqnqmac5cfl2cgdk2py5pwcxsyr6g2bk09spjs2d6g9cszld";
+    sha256 = "0wl9xnv6bbpp0f93iwidvf7n1ns2nbd8ykyc9r163s3f04l295k3";
     cudatoolkit = cudatoolkit_9_0;
     cudnn = cudnn_cudatoolkit_9_0;
   };
