@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix/nixpkgs.nix { } }:
+{ pkgs ? import ../pin/nixpkgs.nix { } }:
 
 let
   # genericPytorch = pypkgs: pkgs.callPackage ./. {};
@@ -20,12 +20,12 @@ let
   #   args = { mklSupport = true; };
   # };
 
-  magma_240 = pkgs.callPackage ./nix/third_party/magma_250.nix {
+  magma_240 = pkgs.callPackage ../deps/magma_250.nix {
     cudatoolkit = pkgs.cudatoolkit_10_0;
     mklSupport = false;
   };
 
-  magma_240mkl = pkgs.callPackage ./nix/third_party/magma_250.nix {
+  magma_240mkl = pkgs.callPackage ../deps/magma_250.nix {
     cudatoolkit = pkgs.cudatoolkit_10_0;
     mklSupport = true;
   };
