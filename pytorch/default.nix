@@ -114,7 +114,7 @@ in buildPythonPackage rec {
     description = "Open source, prototype-to-production deep learning platform";
     homepage    = https://pytorch.org/;
     license     = lib.licenses.bsd3;
-    platforms   = lib.platforms.linux;
+    platforms   = with lib.platforms; [ linux darwin ];
     maintainers = with lib.maintainers; [ teh thoughtpolice ];
   };
 }

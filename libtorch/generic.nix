@@ -52,6 +52,6 @@ stdenv.mkDerivation rec {
     description = "libtorch";
     homepage = https://pytorch.org/;
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms = with platforms; [ darwin linux ];
   };
 }
