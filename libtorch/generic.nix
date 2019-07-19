@@ -25,7 +25,8 @@ stdenv.mkDerivation rec {
   inherit version;
 
   src = fetchzip {
-    url = "https://download.pytorch.org/libtorch/${buildtype}/libtorch-shared-with-deps-latest.zip";
+    # url = "https://download.pytorch.org/libtorch/${buildtype}/libtorch-shared-with-deps-latest.zip";
+    url = "https://download.pytorch.org/libtorch/${buildtype}/libtorch-macos-1.1.0.zip";
     inherit sha256;
   };
 
@@ -52,6 +53,6 @@ stdenv.mkDerivation rec {
     description = "libtorch";
     homepage = https://pytorch.org/;
     license = licenses.bsd3;
-    platforms = with platforms; [ darwin linux ];
+    platforms = with platforms; [ linux ] ++ stdenv.lib.optionals (!cudaSupport) [ darwin ];
   };
 }
