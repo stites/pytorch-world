@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import ../pin/nixpkgs.nix {} }:
 
 let
   probtorch-releases = pkgs.callPackage ./release.nix { };
