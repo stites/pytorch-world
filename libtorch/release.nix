@@ -63,7 +63,7 @@ in
         else if stdenv.hostPlatform.system == "x86_64-darwin" then
           fetchzip {
             url = "https://download.pytorch.org/libtorch/${buildtype}/libtorch-macos-latest.zip";
-            sha256 = "03wqgvmyz2dv5iin27rnhxy6blk7gf0h49vgwmnab9c5j43y2y3d";
+            sha256 = "15bb1dbjj4hl60sh7x45wz5nfvik7cw9fa3iqw2qav0bn6l1f1kf";
           }
         else throw "missing url for platform ${stdenv.hostPlatform.system}";
     };
