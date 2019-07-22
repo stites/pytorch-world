@@ -1,5 +1,5 @@
 { stdenv, fetchzip, autoreconfHook, gettext
-, version, sha256
+, version, mkSrc
 , cudaSupport ? false, cudatoolkit ? null, cudnn ? null
 , mklSupport ? false , mkl ? null}:
 
@@ -15,8 +15,7 @@ let
       nightly + arch;
 in
 
-# stable cuda 10 doesn't exist yet
-assert cudaSupport == false || (cudatoolkit != null && cudnn != null && cudaMajor == "9" && cudaMinor == "0");
+assert cudaSupport == false || (cudatoolkit != null && cudnn != null);
 assert mklSupport == false || mkl != null;
 assert version == "1.1" || version == "nightly";
 
@@ -24,10 +23,7 @@ stdenv.mkDerivation rec {
   name = "libtorch-${version}";
   inherit version;
 
-  src = fetchzip {
-    url = "https://download.pytorch.org/libtorch/${buildtype}/libtorch-shared-with-deps-latest.zip";
-    inherit sha256;
-  };
+  src = mkSrc buildtype;
 
   propagatedBuildInputs = []
     ++ stdenv.lib.optionals cudaSupport [ cudatoolkit cudnn ]
@@ -52,6 +48,6 @@ stdenv.mkDerivation rec {
     description = "libtorch";
     homepage = https://pytorch.org/;
     license = licenses.bsd3;
-    platforms = platforms.linux;
+    platforms = with platforms; linux ++ stdenv.lib.optionals (!cudaSupport) darwin;
   };
 }
