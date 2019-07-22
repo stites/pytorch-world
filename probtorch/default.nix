@@ -1,4 +1,4 @@
-{ lib, fetchFromGitHub, buildPythonPackage, pytorch, pytest }:
+{ lib, fetchFromGitHub, buildPythonPackage, pytorch }:
 
 buildPythonPackage rec {
   pname = "probtorch";
