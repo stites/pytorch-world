@@ -13,7 +13,8 @@ in
 {
   libtorch_cpu = callCpu {
     version = "1.1";
-    sha256 = "09iwdy31zg9dzkrjx8mwpds9mxrv775msn01v1njkpjymvi7llz6";
+    # sha256 = "09iwdy31zg9dzkrjx8mwpds9mxrv775msn01v1njkpjymvi7llz6";
+    sha256 = "03wqgvmyz2dv5iin27rnhxy6blk7gf0h49vgwmnab9c5j43y2y3d";
   };
   libtorch_cudatoolkit_9_0 = callGpu {
     version = "1.1";

@@ -53,6 +53,6 @@ stdenv.mkDerivation rec {
     description = "libtorch";
     homepage = https://pytorch.org/;
     license = licenses.bsd3;
-    platforms = with platforms; [ linux ] ++ stdenv.lib.optionals (!cudaSupport) [ darwin ];
+    platforms = with platforms; platforms.all; #[ linux ] ++ stdenv.lib.optionals (!cudaSupport) [ darwin ];
   };
 }
