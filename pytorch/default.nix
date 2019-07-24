@@ -15,6 +15,7 @@ let
     paths = [ cudatoolkit.out cudatoolkit.lib ];
   };
   my_magma = magma.override {cudatoolkit = cudatoolkit;};
+  my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
 
   # Normally libcuda.so.1 is provided at runtime by nvidia-x11 via
   # LD_LIBRARY_PATH=/run/opengl-driver/lib.  We only use the stub
@@ -74,7 +75,6 @@ in buildPythonPackage rec {
   PYTORCH_BUILD_VERSION = version;
   PYTORCH_BUILD_NUMBER = 0;
   USE_FBGEMM = 0; # this can't build because of CMAKE downloads
-  USE_MKLDNN = 0; # mkl with cuda is broken
   USE_NCCL = 0; # multigpu looks broken broken
   # on deck
   USE_DISTRIBUTED = 0; # this might work
@@ -82,24 +82,22 @@ in buildPythonPackage rec {
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
   # (upstream seems to have fixed this in the wrong place?)
   # https://github.com/intel/mkl-dnn/commit/8134d346cdb7fe1695a2aa55771071d455fae0bc
-  NIX_CFLAGS_COMPILE = lib.optionals (numpy.blasImplementation == "mkl") [ "-Wno-error=array-bounds" ];
+  NIX_CFLAGS_COMPILE = lib.optionals (my_numpy.blasImplementation == "mkl") [ "-Wno-error=array-bounds" ];
 
   nativeBuildInputs = [
      cmake
      utillinux
      which
-  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ]
-    ++ lib.optionals mklSupport [ mkl ];
+  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
 
   buildInputs = [
-     numpy.blas
-  ] ++ lib.optionals cudaSupport [ cudnn my_magma  nccl ]
-    ++ lib.optionals mklSupport [ mkl ]
+     my_numpy.blas
+  ] ++ lib.optionals cudaSupport [ cudnn my_magma ]
     ++ lib.optionals stdenv.isLinux [ numactl ];
 
   propagatedBuildInputs = [
     cffi
-    numpy
+    my_numpy
     pyyaml
     ninja
     setuptools
