@@ -1,6 +1,7 @@
 { stdenv, fetchurl, buildPythonPackage, pythonOlder,
   cudaSupport ? false, cudatoolkit ? null, cudnn ? null, nccl ? null,
   mklSupport ? false, mkl ? null,
+  openMPISupport ? false, openmpi ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
   linkFarm, symlinkJoin, ninja, setuptools,
   utillinux, which, magma, bash }:
@@ -8,6 +9,7 @@
 assert cudnn == null || cudatoolkit != null;
 assert !cudaSupport || cudatoolkit != null;
 assert !mklSupport || mkl != null;
+assert !openMPISupport || openmpi != null;
 
 let
   cudatoolkit_joined = symlinkJoin {
@@ -16,6 +18,7 @@ let
   };
   my_magma = magma.override {cudatoolkit = cudatoolkit;};
   my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
+  my_openmpi = if openMPISupport && cudaSupport && !openmpi.cudaSupport then openmpi.override { cudaSupport = true; inherit cudatoolkit; } else openmpi;
 
   # Normally libcuda.so.1 is provided at runtime by nvidia-x11 via
   # LD_LIBRARY_PATH=/run/opengl-driver/lib.  We only use the stub
@@ -97,11 +100,13 @@ in buildPythonPackage rec {
      cmake
      utillinux
      which
-  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
+  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ]
+    ++ lib.optionals openMPISupport [ my_openmpi ];
 
   buildInputs = [
      my_numpy.blas
   ] ++ lib.optionals cudaSupport [ cudnn my_magma ]
+    ++ lib.optionals openMPISupport [ my_openmpi ]
     ++ lib.optionals stdenv.isLinux [ numactl ];
 
   propagatedBuildInputs = [

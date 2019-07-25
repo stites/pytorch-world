@@ -15,11 +15,6 @@ let
       };
     in mypython.withPackages(ps: [ ps.pytorch ]);
 
-  # pytorchMkl = python: generic {
-  #   python;
-  #   args = { mklSupport = true; };
-  # };
-
   magma_240 = pkgs.callPackage ../deps/magma_250.nix {
     cudatoolkit = pkgs.cudatoolkit_10_0;
     mklSupport = false;
@@ -29,19 +24,20 @@ let
     cudatoolkit = pkgs.cudatoolkit_10_0;
     mklSupport = true;
   };
+
+  openmpi_cpu = pkgs.callPackage ../deps/openmpi.nix { cudaSupport = false; };
+  openmpi_cuda = pkgs.callPackage ../deps/openmpi.nix {
+    cudatoolkit = pkgs.cudatoolkit_10_0;
+    cudaSupport = true;
+  };
 in
 { inherit magma_240;
 
   pytorch36-vanilla = generic { python = pkgs.python36; };
-  # pytorch37-vanilla = generic { python = pkgs.python37; };
   pytorch36-mkl = generic {
     python = pkgs.python36;
     args = { mklSupport = true; };
   };
-  # pytorch37-mkl = generic {
-  #   python = pkgs.python37;
-  #   args = { mklSupport = true; };
-  # };
   pytorch36-cu = generic {
     python = pkgs.python36;
     args = {
@@ -52,6 +48,53 @@ in
       nccl = pkgs.nccl_cudatoolkit_10;
     };
   };
+  pytorch36-cu-mkl = generic {
+    python = pkgs.python36;
+    args = {
+      mklSupport = true; magma = magma_240;
+      cudaSupport = true;
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+    };
+  };
+
+  # CHECK OPEN_MPI
+  pytorch36-openmpi = generic {
+    python = pkgs.python36;
+    args = { openMPISupport = true; openmpi = openmpi_cpu; };
+  };
+  pytorch36-mkl-openmpi = generic {
+    python = pkgs.python36;
+    args = { mklSupport = true; openMPISupport = true; openmpi = openmpi_cpu; };
+  };
+  pytorch36-cu-mkl-openmpi-explicit = generic {
+    python = pkgs.python36;
+    args = {
+      mklSupport = true; magma = magma_240;
+      openMPISupport = true; openmpi = openmpi_cuda;
+      cudaSupport = true;
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+    };
+  };
+  pytorch36-cu-mkl-openmpi-implicit = generic {
+    python = pkgs.python36;
+    args = {
+      mklSupport = true; magma = magma_240;
+      openMPISupport = true; openmpi = openmpi_cpu;
+      cudaSupport = true;
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+    };
+  };
+  # pytorch37-vanilla = generic { python = pkgs.python37; };
+  # pytorch37-mkl = generic {
+  #   python = pkgs.python37;
+  #   args = { mklSupport = true; };
+  # };
   # pytorch37-cu = generic {
   #   python = pkgs.python37;
   #   args = {
