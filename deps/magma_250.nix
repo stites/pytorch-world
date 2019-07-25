@@ -1,32 +1,50 @@
-{ stdenv, fetchurl, cmake, gfortran, cudatoolkit, libpthreadstubs, liblapack, mklSupport ? false, mkl ? null }:
+{ stdenv, fetchurl, cmake, gfortran, cudatoolkit, libpthreadstubs, liblapack
+, mklSupport ? false, mkl ? null
+}:
 
 assert !mklSupport || mkl != null;
 
 with stdenv.lib;
 
-let version = "2.4.0";
+let version = "2.5.0";
 
 in stdenv.mkDerivation {
   name = "magma-${version}";
   src = fetchurl {
     url = "https://icl.cs.utk.edu/projectsfiles/magma/downloads/magma-${version}.tar.gz";
-    sha256 = "0kws3ygidlc07xbldbvnz45h2xl4aznv9xd6r0lzs1al56qkkf2f";
+    sha256 = "0czspk93cv1fy37zyrrc9k306q4yzfxkhy1y4lj937dx8rz5rm2g";
     name = "magma-${version}.tar.gz";
   };
 
-  buildInputs = [ gfortran cudatoolkit libpthreadstubs liblapack cmake ]
-    ++ optionals mklSupport [ mkl ];
-
-  preConfigure = ''
-    export CC=${cudatoolkit.cc}/bin/gcc CXX=${cudatoolkit.cc}/bin/g++
-  '';
+  buildInputs = [ gfortran cudatoolkit libpthreadstubs cmake ]
+    ++ (if mklSupport then [ mkl ] else [ liblapack ]);
 
   doCheck = false;
+
+  MKLROOT = optionalString mklSupport "${mkl}";
+
   #checkTarget = "tests";
 
   enableParallelBuilding=true;
 
-  # MAGMA's default CMake setup does not care about installation. So we copy files directly.
+  # we will not build tests as erroring on compilation
+  buildPhase = ''
+    runHook preBuild
+    # set to empty if unset
+    : ''${makeFlags=}
+    local flagsArray=(
+        ''${enableParallelBuilding:+-j''${NIX_BUILD_CORES} -l''${NIX_BUILD_CORES}}
+        SHELL=''$SHELL
+        ''$makeFlags ''${makeFlagsArray+"''${makeFlagsArray[@]}"}
+        ''$buildFlags ''${buildFlagsArray+"''${buildFlagsArray[@]}"}
+    )
+    echoCmd 'build flags' "''${flagsArray[@]}"
+    make magma "''${flagsArray[@]}"
+    make magma_sparse "''${flagsArray[@]}"
+    unset flagsArray
+    runHook postBuild
+  '';
+# MAGMA's default CMake setup does not care about installation. So we copy files directly.
   installPhase = ''
     mkdir -p $out
     mkdir -p $out/include
