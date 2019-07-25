@@ -1,5 +1,5 @@
 { stdenv, fetchurl, fetchpatch, gfortran, perl, libnl
-, rdma-core, zlib, numactl, libevent, hwloc
+, rdma-core, zlib, numactl, libevent, hwloc, symlinkJoin
 
 # Enable CUDA support
 , cudaSupport ? false, cudatoolkit ? null

@@ -18,7 +18,7 @@ let
   };
   my_magma = magma.override {cudatoolkit = cudatoolkit;};
   my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
-  my_openmpi = if openMPISupport && cudaSupport && !openmpi.cudaSupport then openmpi.override { cudaSupport = true; inherit cudatoolkit; } else openmpi;
+  my_openmpi = if openMPISupport then openmpi.override { inherit cudaSupport cudatoolkit; } else openmpi;
 
   # Normally libcuda.so.1 is provided at runtime by nvidia-x11 via
   # LD_LIBRARY_PATH=/run/opengl-driver/lib.  We only use the stub
@@ -77,19 +77,9 @@ in buildPythonPackage rec {
   # https://github.com/pytorch/pytorch/blob/v1.0.0/setup.py#L267
   PYTORCH_BUILD_VERSION = version;
   PYTORCH_BUILD_NUMBER = 0;
+
   USE_FBGEMM = 0; # this can't build because of CMAKE downloads
-
-  # 7/24: Running Top:           MKL/CPU  +DISTRIBUTED  << works!
-  # 7/24: Running Right-top:     MKL+CU   -DISTRIBUTED  << works!
-  # 7/24: Running Right-bottom:  CU       +DISTRIBUTED  << works!
-  # USE_DISTRIBUTED = 0; # Working with CPU/MKL? UNKNOWN. Working with CUDA? UNKNOWN.
-
-  # USE_NCCL = 0; # LET'S FIX IT: multigpu looks broken broken
-  # USE_SYSTEM_NCCL = 0; # if fix1 then 0 else 1; # Fix #1
-
-  NCCL_ROOT_DIR    = lib.optionalString cudaSupport "${nccl.dev}";
-  # NCCL_LIB_DIR     = lib.optionalString cudaSupport "${nccl.dev}/lib";
-  # NCCL_INCLUDE_DIR = lib.optionalString cudaSupport "${nccl.dev}/include";
+  NCCL_ROOT_DIR = lib.optionalString cudaSupport "${nccl.dev}";
 
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
   # (upstream seems to have fixed this in the wrong place?)
@@ -100,13 +90,11 @@ in buildPythonPackage rec {
      cmake
      utillinux
      which
-  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ]
-    ++ lib.optionals openMPISupport [ my_openmpi ];
+  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
 
   buildInputs = [
      my_numpy.blas
   ] ++ lib.optionals cudaSupport [ cudnn my_magma ]
-    ++ lib.optionals openMPISupport [ my_openmpi ]
     ++ lib.optionals stdenv.isLinux [ numactl ];
 
   propagatedBuildInputs = [
@@ -115,7 +103,8 @@ in buildPythonPackage rec {
     pyyaml
     ninja
     setuptools
-  ] ++ lib.optional (pythonOlder "3.5") typing;
+  ] ++ lib.optionals openMPISupport [ my_openmpi ]
+    ++ lib.optional (pythonOlder "3.5") typing;
 
   checkInputs = [ hypothesis ];
   checkPhase = ''
