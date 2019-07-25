@@ -75,9 +75,18 @@ in buildPythonPackage rec {
   PYTORCH_BUILD_VERSION = version;
   PYTORCH_BUILD_NUMBER = 0;
   USE_FBGEMM = 0; # this can't build because of CMAKE downloads
-  USE_NCCL = 0; # multigpu looks broken broken
-  # on deck
-  USE_DISTRIBUTED = 0; # this might work
+
+  # 7/24: Running Top:           MKL/CPU  +DISTRIBUTED  << works!
+  # 7/24: Running Right-top:     MKL+CU   -DISTRIBUTED  << works!
+  # 7/24: Running Right-bottom:  CU       +DISTRIBUTED  << works!
+  # USE_DISTRIBUTED = 0; # Working with CPU/MKL? UNKNOWN. Working with CUDA? UNKNOWN.
+
+  # USE_NCCL = 0; # LET'S FIX IT: multigpu looks broken broken
+  # USE_SYSTEM_NCCL = 0; # if fix1 then 0 else 1; # Fix #1
+
+  NCCL_ROOT_DIR    = lib.optionalString cudaSupport "${nccl.dev}";
+  # NCCL_LIB_DIR     = lib.optionalString cudaSupport "${nccl.dev}/lib";
+  # NCCL_INCLUDE_DIR = lib.optionalString cudaSupport "${nccl.dev}/include";
 
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
   # (upstream seems to have fixed this in the wrong place?)
