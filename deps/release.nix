@@ -14,6 +14,6 @@ let
   };
 in
 {
-  inherit asmjit cpuinfo googletest googletest_180 googletest_181 googlebenchmark;
-  fbgemm = callPackage ./fbgemm.nix { inherit asmjit cpuinfo googletest; };
+  # inherit asmjit cpuinfo googletest googletest_180 googletest_181 googlebenchmark;
+  fbgemm = callPackage ./fbgemm.nix { blas = mkl; };
 }
