@@ -1,9 +1,9 @@
 { pkgs ? import ../pin/nixpkgs.nix {}, pythonPackages ? pkgs.python36Packages }:
 
 let
-  generic = args: pkgs.callPackage ./. ({
-    inherit (pythonPackages) buildPythonPackage pythonOlder numpy pyyaml cffi typing hypothesis setuptools;
-  } // args);
+  # generic = args: pkgs.callPackage ./. ({
+  #   inherit (pythonPackages) buildPythonPackage pythonOlder numpy pyyaml cffi typing hypothesis setuptools;
+  # } // args);
 
   mypackageOverrides = args: self: super: {
     pytorch = self.callPackage ./. ({} // args);

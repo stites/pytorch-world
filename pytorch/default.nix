@@ -43,14 +43,6 @@ in buildPythonPackage rec {
     sha256 = "1rckv7m3h04mgf7p61rmabszgxh5110ly6qq0qnp28vg7mckvgkh";
   };
 
-  amsjit = fetchFromGitHub {
-    owner  = "asmjit";
-    repo   = "asmjit";
-    rev    = "fc251c914e77cd079e58982cdab00a47539d7fc5";
-    fetchSubmodules = true;
-    sha256 = "14g99jnq8b3v2kz7s03zbifss760hxdf1dkn9d825jl0fcni5bx8";
-  };
-
   preConfigure = lib.optionalString cudaSupport ''
     export CC=${cudatoolkit.cc}/bin/gcc CXX=${cudatoolkit.cc}/bin/g++
   '' + lib.optionalString (cudaSupport && cudnn != null) ''
@@ -79,7 +71,7 @@ in buildPythonPackage rec {
   PYTORCH_BUILD_NUMBER = 0;
 
   USE_FBGEMM = 0; # this can't build because of CMAKE downloads
-  NCCL_ROOT_DIR = lib.optionalString cudaSupport "${nccl.dev}";
+  NCCL_ROOT_DIR = lib.optionalString cudaSupport "${nccl.dev}"; # Optional: USE_SYSTEM_NCCL=true and place in
 
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
   # (upstream seems to have fixed this in the wrong place?)
@@ -90,7 +82,7 @@ in buildPythonPackage rec {
      cmake
      utillinux
      which
-  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
+  ] ++ lib.optionals cudaSupport [ cudatoolkit_joined nccl.dev ];
 
   buildInputs = [
      my_numpy.blas
@@ -101,9 +93,9 @@ in buildPythonPackage rec {
     cffi
     my_numpy
     pyyaml
-    ninja
+    ninja # why is this in propagatedBuildInputs
     setuptools
-  ] ++ lib.optionals openMPISupport [ my_openmpi ]
+  ] ++ lib.optionals openMPISupport [ my_openmpi ] # why is this in propagatedBuildInputs
     ++ lib.optional (pythonOlder "3.5") typing;
 
   checkInputs = [ hypothesis ];
