@@ -1,11 +1,17 @@
-{ pkgs ? import ./nix/nixpkgs.nix { } }:
+{ pkgs ? import ../pin/nixpkgs.nix { } }:
 
-let release = (pkgs.callPackage ./release.nix { inherit pkgs; });
+let
+  python36With =
+    let
+      mypython = pkgs.python36.override {
+        packageOverrides = self: super: {
+          pytorch = (pkgs.callPackage ./release.nix { inherit pkgs; pythonPackages = pkgs.python36Packages; }).pytorch;
+        };
+        self = mypython;
+      };
+    in mypython.withPackages(ps: [ ps.pytorch ]);
 in
-pkgs.mkShell {
-  buildInputs = with release; [
-    magma_240
-    pytorch36-cu
-  ];
-}
 
+pkgs.mkShell {
+  buildInputs = [ python36With ];
+}
