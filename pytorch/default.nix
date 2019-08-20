@@ -1,5 +1,5 @@
 { stdenv, fetchurl, fetchgit, buildPythonPackage, pythonOlder,
-  cudaSupport ? false, cudatoolkit ? null, cudnn ? null, nccl ? null,
+  cudaSupport ? false, cudatoolkit ? null, cudnn ? null, nccl ? null, magma ? null,
   mklSupport ? false, mkl ? null,
   openMPISupport ? false, openmpi ? null,
   buildNamedTensor ? false,
@@ -10,26 +10,51 @@
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
   ninja,
 
-  utillinux, which, magma, bash }:
+  utillinux, which, bash }:
 
 assert cudnn == null || cudatoolkit != null;
 assert !cudaSupport || cudatoolkit != null;
 assert !mklSupport || mkl != null;
 assert !openMPISupport || openmpi != null;
-# assert cudaArchList == null || cudaArchList is list of strings
 
 let
   cudatoolkit_joined = symlinkJoin {
     name = "${cudatoolkit.name}-unsplit";
+    # nccl is here purely for semantic grouping it could be moved to nativeBuildInputs
     paths = [ cudatoolkit.out cudatoolkit.lib nccl.dev nccl.out ];
   };
-  my_magma = magma.override {cudatoolkit = cudatoolkit; inherit mklSupport mkl; };
+  my_magma = magma.override { cudatoolkit = cudatoolkit; inherit mklSupport mkl; };
   my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
   my_openmpi = if openMPISupport then openmpi.override { inherit cudaSupport cudatoolkit; } else openmpi;
 
-  # Give an explicit list of supported architectures for the build, see
-  # https://github.com/pytorch/pytorch/issues/23573
+  # Give an explicit list of supported architectures for the build, See:
+  # - pytorch bug report: https://github.com/pytorch/pytorch/issues/23573
+  # - pytorch-1.2.0 build on nixpks: https://github.com/NixOS/nixpkgs/pull/65041
+  #
+  # This list was selected by omitting the TORCH_CUDA_ARCH_LIST parameter,
+  # observing the fallback option (which selected all architectures known
+  # from cudatoolkit_10_0, pytorch-1.2, and python-3.6), and doing a binary
+  # searching to find offending architectures.
+  #
+  # NOTE: Because of sandboxing, this derivation can't auto-detect the hardware's
+  # cuda architecture, so there is also now a problem around new architectures
+  # not being supported until explicitly added to this derivation.
+  #
   # FIXME: Let users explicitly pass in cudaArchList
+  # FIXME: CMake is throwing the following warning on python-1.2:
+  #
+  # ```
+  # CMake Warning at cmake/public/utils.cmake:172 (message):
+  #   In the future we will require one to explicitly pass TORCH_CUDA_ARCH_LIST
+  #   to cmake instead of implicitly setting it as an env variable.  This will
+  #   become a FATAL_ERROR in future version of pytorch.
+  # ```
+  # If this is causing problems for your build, this derivation may have to strip
+  # away the standard `buildPythonPackage` and use the
+  # [*Adjust Build Options*](https://github.com/pytorch/pytorch/tree/v1.2.0#adjust-build-options-optional)
+  # instructions. This will also add more flexibility around configurations
+  # (allowing FBGEMM to be built in pytorch-1.1), and may future proof this
+  # derivation.
   cudaArchList = [
     # "3.0" < this architecture is causing problems
     "3.5"
@@ -40,7 +65,7 @@ let
     "7.0"
     "7.0+PTX"
     "7.5"
-    "7.5+PTX"
+    "7.5+PTX"  # < most recent architecture as of cudatoolkit_10_0 and pytorch-1.2.0
   ];
 
   # Normally libcuda.so.1 is provided at runtime by nvidia-x11 via
@@ -94,15 +119,8 @@ in buildPythonPackage rec {
   PYTORCH_BUILD_VERSION = version;
   PYTORCH_BUILD_NUMBER = 0;
 
-  BUILD_NAMEDTENSOR = buildNamedTensor;
-  # for pytorch
-  USE_SYSTEM_NCCL=true;
-  # NCCL_ROOT = lib.optionalString cudaSupport "${nccl.dev}";
-  # NCCL_INCLUDE_DIR = lib.optionalString cudaSupport "${nccl.dev}/include";
-  # NCCL_LIB_DIR = lib.optionalString cudaSupport "${nccl.dev}/lib";
-  # # # GLoo doesn't seem to find NCCL
-  # CFLAGS = lib.optionals cudaSupport ["-DNCCL_INCLUDE_DIR=${nccl.dev}/include" "-DNCCL_LIBRARY=${nccl.dev}/lib"]
-  #    ++ lib.optionals mklSupport ["-Wno-error=array-bounds"];
+  BUILD_NAMEDTENSOR = buildNamedTensor;  # experimental feature
+  USE_SYSTEM_NCCL=true;                  # don't build pytorch's third_party NCCL
 
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
   # (upstream seems to have fixed this in the wrong place?)
@@ -112,10 +130,6 @@ in buildPythonPackage rec {
   # Also of interest: pytorch ignores CXXFLAGS uses CFLAGS for both C and C++:
   # https://github.com/pytorch/pytorch/blob/v1.2.0/setup.py#L17
   NIX_CFLAGS_COMPILE = lib.optionals (my_numpy.blasImplementation == "mkl") [ "-Wno-error=array-bounds" ];
-
-  # # cudaArchList includes Relevant issue: https://github.com/pytorch/pytorch/issues/23573
-  # cmakeFlags = lib.optionals (lib.lists.length cudaArchList > 0) [ "-DTORCH_CUDA_ARCH_LIST=${lib.strings.concatStringsSep ";" cudaArchList}" ];
-
 
   nativeBuildInputs = [
     cmake
@@ -138,17 +152,17 @@ in buildPythonPackage rec {
 
   checkInputs = [ hypothesis ninja ];
   checkPhase = "${cudaStubEnv}python test/run_test.py"
-    # utils requires git, which is not allowed in the check phase
-    + " --exclude utils"
+    + " --exclude utils" # utils requires git, which is not allowed in the check phase
+
+    # Other tests which have been disabled in previous nix derivations of pytorch.
     # --exclude dataloader sparse torch utils thd_distributed distributed cpp_extensions
     ;
-
 
   meta = {
     description = "Open source, prototype-to-production deep learning platform";
     homepage    = https://pytorch.org/;
     license     = lib.licenses.bsd3;
     platforms   = with lib.platforms; [ linux ] ++ lib.optionals (!cudaSupport) [ darwin ];
-    maintainers = with lib.maintainers; [ teh thoughtpolice ];
+    maintainers = with lib.maintainers; [ teh thoughtpolice stites ];
   };
 }
