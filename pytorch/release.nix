@@ -33,7 +33,7 @@ let
     cudaSupport = true;
   };
 in
-{ inherit magma_250 magma_250mkl;
+rec { inherit magma_250 magma_250mkl;
 
   pytorch36 = generic { python = pkgs.python36; };
   pytorch36-mkl = generic {
@@ -70,6 +70,16 @@ in
     python = pkgs.python36;
     args = { mklSupport = true; openMPISupport = true; openmpi = openmpi_cpu; };
   };
+  pytorch36-mkl-openmpi-extras = generic {
+    python = pkgs.python36;
+    args = {
+      mklSupport = true;
+      openMPISupport = true;
+      openmpi = openmpi_cpu;
+      buildNamedTensor = true;
+      buildBinaries = true;
+    };
+  };
   pytorch36-cu-mkl-openmpi = generic {
     python = pkgs.python36;
     args = {
@@ -95,8 +105,9 @@ in
     };
   };
 
+  pytorch36Full = pytorch36-mkl-openmpi-extras;
+  pytorch36Cuda10Full = pytorch36-cu-mkl-openmpi-implicit-extras;
   # pytorch36Full = ;
-  # pytorch36CudaFull = ;
   # pytorch37-vanilla = generic { python = pkgs.python37; };
   # pytorch37-mkl = generic {
   #   python = pkgs.python37;
