@@ -5,20 +5,20 @@ The pytorch ecosystem in nix.
 
 Pytorch-1.x support is still being solidified. The current features are supported:
 
-|                                     | pytorch-v1.1.0     | pytorch-v1.2.0     |
+| **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     |
 | ----------------------------------- | ------------------ | ------------------ |
 | vanilla                             | :heavy_check_mark: | :heavy_check_mark: |
 | mkl+mkldnn                          | :heavy_check_mark: | :heavy_check_mark: |
-| openMPI                             | :heavy_check_mark: | :question:         |
+| openMPI                             | :heavy_check_mark: | :heavy_check_mark: |
 | FBGEMM                              | :x:                | :heavy_check_mark: |
-| Full CPU (all above)*               | :heavy_check_mark: | :question:         |
-| Full CPU + NamedTensors + Binaries  | :grey_exclamation: | :question:         |
-| CUDA                                | :heavy_check_mark: | :question:         |
-| CUDA+NCCL                           | :heavy_check_mark: | :x:                |
-| CUDA+NCCL+openMPI                   | :heavy_check_mark: | :question:         |
-| CUDA+NCCL+openMPI+mkl               | :heavy_check_mark: | :question:         |
-| Full CUDA (all above)*              | :heavy_check_mark: | :question:         |
-| Full CUDA + NamedTensors + Binaries | :grey_exclamation: | :question:         |
+| Full CPU (all above)*               | :heavy_check_mark: | :heavy_check_mark: |
+| Full CPU + NamedTensors + Binaries  | :grey_exclamation: | :heavy_check_mark: |
+| CUDA                                | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL                           | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL+openMPI                   | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL+openMPI+mkl               | :heavy_check_mark: | :heavy_check_mark: |
+| Full CUDA (all above)*              | :heavy_check_mark: | :heavy_check_mark: |
+| Full CUDA + NamedTensors + Binaries | :grey_exclamation: | :heavy_check_mark: |
 
 The ":grey_exclamation:" means that namedtensors and binaries weren't attempted in pytorch-v1.1.0.
 
