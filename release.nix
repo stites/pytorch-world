@@ -1,18 +1,18 @@
-{ pkgs ? import ./pin/nixpkgs.nix {} }:
+{ pkgs ? import ./pin/nixpkgs.nix {}, python ? pkgs.python36 }:
 
 let
-  pytorch-releases = pkgs.callPackage ./pytorch/release.nix { };
-  probtorch-releases = pkgs.callPackage ./probtorch/release.nix { };
-  libtorch-releases = pkgs.callPackage ./libtorch/release.nix { };
+  pytorch-releases   = pkgs.callPackage ./pytorch/release.nix { inherit python; };
+  probtorch-releases = pkgs.callPackage ./probtorch/release.nix { inherit python; };
 in
 {
-  inherit (libtorch-releases) libtorch_cpu libtorch_cudatoolkit_10_0;
+  inherit (pytorch-releases)
+    # cpu builds
+    pytorch pytorch-mkl pytorch-openmpi pytorch-mkl-openmpi pytorchFull
+    # cuda dependencies
+    magma_250 magma_250mkl
+    # cuda builds
+    pytorch-cu pytorch-cu-mkl pytorch-cu-mkl-openmpi pytorchWithCuda10Full
+    ;
 
-  inherit (pytorch-releases) magma_250 pytorch36 pytorch36-mkl-openmpi pytorch36-cu-mkl
-  pytorch36-openmpi = generic {
-pytorch36-mkl-openmpi
-  pytorch36-cu-mkl-openmpi-implicit = generic {
-  pytorch36-cu-mkl-openmpi-implicit-extras = generic {
-
-  inherit (probtorch-releases) probtorch36-cpu probtorch36-cu;
+  inherit (probtorch-releases) probtorch probtorchWithCuda;
 }

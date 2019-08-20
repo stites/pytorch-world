@@ -1,9 +1,7 @@
 pytorch-world
 =============
 
-The pytorch ecosystem in nix.
-
-Pytorch-1.x support is still being solidified. The current features are supported:
+The pytorch ecosystem in nix. The current features are supported:
 
 | **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     |
 | ----------------------------------- | ------------------ | ------------------ |
@@ -24,18 +22,32 @@ The ":grey_exclamation:" means that namedtensors and binaries weren't attempted 
 
 The "*" implies that FBGEMM is not included in any of the "Full" builds in pytorch-v1.1.0, but is included for all of pytorch-v1.2.0
 
-
-Cachix (status: complicated)
+Releases
 ============================
 
-Binaries are to appear at pytorch-world.cachix.org.
+This repository will tag releases according to the working version of pytorch.
+There will also a post-fixed snapshot number when new packages are working.
+All releases will only be tested for python-3.6 unless otherwise noted.
 
-Currently, you will find pytorch36, pytorch36-mkl, and pytorch36-cu pushed to cachix. You can get them from this project root with the following:
+
+Using this in your projects
+============================
+
+Suggested use is to pull in `pytorch-world` as a git submodule under some `nix/` folder and refer to `probtorch/release.nix` for an example of how to depend on this library.
+Do not reference `release.nix` files as they don't generate site-packages and only output final python binaries.
+
+Cachix
+=============
+
+Binaries can be found at pytorch-world.cachix.org.
+
+Currently, you will find binaries for the `./release.nix` file which includes pytorch-1.2 related builds (read: no libtorch support).
+This covers all CPU builds, which are darwin-accessible, as well as cuda-enabled pytorch built with `cudatoolkit_10_0`.
+All of this was built from a NixOS machine with python-3.6 (pin, located under `./pin/`), feel free to file issues to increase support.
+You can retrieve any of these with the following:
 
 ```
 cachix use pytorch-world
-nix-build ./pytorch/release.nix -A pytorch36 -A pytorch36-mkl -A pytorch36-cu
+nix-build ./release.nix -A pytorch -A pytorch36-mkl -A pytorch36-cu
 ```
-
-
 
