@@ -1,4 +1,4 @@
-{ stdenv, fetchurl, fetchgit, buildPythonPackage, pythonOlder,
+{ stdenv, fetchurl, fetchgit, buildPythonPackage, python, pythonOlder,
   cudaSupport ? false, cudatoolkit ? null, cudnn ? null, nccl ? null, magma ? null,
   mklSupport ? false, mkl ? null,
   openMPISupport ? false, openmpi ? null,
@@ -83,6 +83,11 @@ in buildPythonPackage rec {
   version = "1.2.0";
   pname = "pytorch";
 
+  outputs = [
+    "out"   # output standard python package
+    "dev"   # output libtorch only
+  ];
+
   src = fetchFromGitHub {
     owner  = "pytorch";
     repo   = "pytorch";
@@ -157,6 +162,11 @@ in buildPythonPackage rec {
     # Other tests which have been disabled in previous nix derivations of pytorch.
     # --exclude dataloader sparse torch utils thd_distributed distributed cpp_extensions
     ;
+  postInstall = ''
+    mkdir $dev
+    cp -r $out/${python.sitePackages}/torch/lib     $dev/lib
+    cp -r $out/${python.sitePackages}/torch/include $dev/include
+  '';
 
   meta = {
     description = "Open source, prototype-to-production deep learning platform";

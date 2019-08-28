@@ -1,4 +1,6 @@
-{ pkgs ? import ./pin/nixpkgs.nix {}, python ? pkgs.python36 }:
+{ pkgs ? import ./pin/nixpkgs.nix {}
+, python ? pkgs.python36, pythonPackages ? pkgs.python36Packages
+}:
 
 let
   pytorch-releases   = pkgs.callPackage ./pytorch/release.nix { inherit python; };
@@ -15,4 +17,7 @@ in
     ;
 
   inherit (probtorch-releases) probtorch probtorchWithCuda;
+
+  libtorch = (pythonPackages.callPackage ./pytorch {}).dev;
+  libtorch-cuda = (pythonPackages.callPackage ./pytorch { cudaSupport = true; magma = pytorch-releases.magma_250; }).dev;
 }
