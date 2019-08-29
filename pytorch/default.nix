@@ -4,6 +4,7 @@
   openMPISupport ? false, openmpi ? null,
   buildNamedTensor ? false,
   buildBinaries ? false,
+  cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
   linkFarm, symlinkJoin,
 
@@ -14,6 +15,8 @@
 
 assert cudnn == null || cudatoolkit != null;
 assert !cudaSupport || cudatoolkit != null;
+assert !cudaSupport || (let majorIs = lib.versions.major cudatoolkit.version;
+                        in majorIs == "9" || majorIs == "10");
 assert !mklSupport || mkl != null;
 assert !openMPISupport || openmpi != null;
 
@@ -40,7 +43,6 @@ let
   # cuda architecture, so there is also now a problem around new architectures
   # not being supported until explicitly added to this derivation.
   #
-  # FIXME: Let users explicitly pass in cudaArchList
   # FIXME: CMake is throwing the following warning on python-1.2:
   #
   # ```
@@ -55,18 +57,28 @@ let
   # instructions. This will also add more flexibility around configurations
   # (allowing FBGEMM to be built in pytorch-1.1), and may future proof this
   # derivation.
-  cudaArchList = [
-    # "3.0" < this architecture is causing problems
+  brokenArchs = [ "3.0" ]; # this variable is only used as documentation.
+  cuda9ArchList = [
     "3.5"
     "5.0"
     "5.2"
     "6.0"
     "6.1"
     "7.0"
-    "7.0+PTX"
+    "7.0+PTX"  # I am getting a "undefined architecture compute_75" on cuda 9
+               # which leads me to believe this is the final cuda-9-compatible architecture.
+  ];
+  cuda10ArchList = cuda9ArchList ++ [
     "7.5"
     "7.5+PTX"  # < most recent architecture as of cudatoolkit_10_0 and pytorch-1.2.0
   ];
+  final_cudaArchList =
+    if !cudaSupport || cudaArchList != null
+    then cudaArchList
+    else
+      if lib.versions.major cudatoolkit.version == "9"
+      then cuda9ArchList
+      else cuda10ArchList; # the assert above removes any ambiguity here.
 
   # Normally libcuda.so.1 is provided at runtime by nvidia-x11 via
   # LD_LIBRARY_PATH=/run/opengl-driver/lib.  We only use the stub
@@ -97,7 +109,7 @@ in buildPythonPackage rec {
   };
 
   preConfigure = lib.optionalString cudaSupport ''
-    export TORCH_CUDA_ARCH_LIST="${lib.strings.concatStringsSep ";" cudaArchList}"
+    export TORCH_CUDA_ARCH_LIST="${lib.strings.concatStringsSep ";" final_cudaArchList}"
     export CC=${cudatoolkit.cc}/bin/gcc CXX=${cudatoolkit.cc}/bin/g++
   '' + lib.optionalString (cudaSupport && cudnn != null) ''
     export CUDNN_INCLUDE_DIR=${cudnn}/include
