@@ -181,6 +181,18 @@ in buildPythonPackage rec {
     cp -r $out/${python.sitePackages}/torch/include $dev/include
   '';
 
+  postFixup = stdenv.lib.optionalString stdenv.isDarwin ''
+      for f in $out/lib/*.dylib; do
+          install_name_tool -id $out/lib/$(basename $f) $f || true
+      done
+      install_name_tool -change @rpath/libc10.dylib                        $out/lib/libc10.dylib                        $out/lib/libc10.dylib
+      install_name_tool -change @rpath/libcaffe2_detectron_ops.dylib       $out/lib/libcaffe2_detectron_ops.dylib       $out/lib/libcaffe2_detectron_ops.dylib
+      install_name_tool -change @rpath/libcaffe2_module_test_dynamic.dylib $out/lib/libcaffe2_module_test_dynamic.dylib $out/lib/libcaffe2_module_test_dynamic.dylib
+      install_name_tool -change @rpath/libshm.dylib                        $out/lib/libshm.dylib                        $out/lib/libshm.dylib
+      install_name_tool -change @rpath/libtorch_python.dylib               $out/lib/libtorch_python.dylib               $out/lib/libtorch_python.dylib
+      install_name_tool -change @rpath/libtorch.dylib                      $out/lib/libtorch.dylib                      $out/lib/libtorch.dylib
+  '';
+
   meta = {
     description = "Open source, prototype-to-production deep learning platform";
     homepage    = https://pytorch.org/;
