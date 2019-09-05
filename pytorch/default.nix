@@ -167,6 +167,7 @@ in buildPythonPackage rec {
   ] ++ lib.optionals openMPISupport [ my_openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing;
 
+  doCheck = false;
   checkInputs = [ hypothesis ninja ];
   checkPhase = "${cudaStubEnv}python test/run_test.py"
     + " --exclude utils" # utils requires git, which is not allowed in the check phase
