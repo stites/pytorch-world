@@ -13,6 +13,8 @@ There will also a post-fixed snapshot number when new packages are working.
 All releases will only be tested for python-3.6 unless otherwise noted.
 
 - `unstable`:
+  - darwin support for `dev` outputs
+  - disabled test phase (for faster builds). Override `doCheck` to run the test suite. 
   - adds a cudaArchList argument that allows users to test on the latest nvidia hardware without waiting for this package.
   - adds .dev output which gives top-level access to generated C/C++ code (libtorch).
 
