@@ -26,7 +26,7 @@ in
           sha256 = "0vh5fw9h1rydp2bbrlkq54z29p1v0lpfmllddk82sgz7sr3jld66";
         }
       else if stdenv.hostPlatform.system == "x86_64-darwin" then
-        fetchzip {
+        (import <nixpkgs> {}).fetchzip {
           url = "https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.2.0.zip";
           sha256 = "0qglhy7dpjxcn24q41wp0n8dflypbmfk6mqzafavi2jfhl33wac2";
         }
