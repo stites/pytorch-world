@@ -1,0 +1,19 @@
+name: Haskell CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Setup nix
+      run: |
+        git submodule init && git submodule update
+        curl https://nixos.org/nix/install | sh
+    - name: Build
+      run: |
+        . /Users/runner/.nix-profile/etc/profile.d/nix.sh
+        mkdir -p ~/.config/nixpkgs
+        echo  '{ allowUnfree = true; }' >  ~/.config/nixpkgs/config.nix
+        cd libtorch;nix-build -E '((import <nixpkgs>) {}).callPackages ./release.nix {}'
