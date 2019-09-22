@@ -1,17 +1,18 @@
-{ pkgs ? import ../pin/nixpkgs.nix { } }:
+# { pkgs ? import ../pin/nixpkgs.nix { }, python ? pkgs.python36, pythonPackages ? pkgs.python36Packages }:
+{ pkgs ? import ../pin/nixpkgs.nix { }, python ? pkgs.python3 }:
 
 let
-  python36With =
+  pythonWith =
     let
-      mypython = pkgs.python36.override {
+      mypython = python.override {
         packageOverrides = self: super: {
-          pytorch = (pkgs.callPackage ./release.nix { inherit pkgs; pythonPackages = pkgs.python36Packages; }).pytorch;
+          pytorch = super.callPackage ./. { };
         };
         self = mypython;
       };
-    in mypython.withPackages(ps: [ ps.pytorch ]);
+    in mypython.withPackages(ps: [ ps.pytorch ps.tensorflow-tensorboard]);
 in
 
 pkgs.mkShell {
-  buildInputs = [ python36With ];
+  buildInputs = [ pythonWith ];
 }

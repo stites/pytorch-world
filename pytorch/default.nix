@@ -6,10 +6,14 @@
   buildBinaries ? false,
   cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
+
   linkFarm, symlinkJoin,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
   ninja,
+
+  # dependencies for torch.utils.tensorboard
+  tensorboardSupport ? true, pillow, six, future, tensorflow-tensorboard, tensorflow,
 
   utillinux, which, bash }:
 
@@ -165,7 +169,8 @@ in buildPythonPackage rec {
     my_numpy
     pyyaml
   ] ++ lib.optionals openMPISupport [ my_openmpi ]
-    ++ lib.optional (pythonOlder "3.5") typing;
+    ++ lib.optional (pythonOlder "3.5") typing
+    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard tensorflow];
 
   doCheck = false;
   checkInputs = [ hypothesis ninja ];
