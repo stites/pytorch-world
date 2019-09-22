@@ -1,34 +1,51 @@
 { stdenv, fetchzip, autoreconfHook, gettext
-, version, mkSrc
-, cudaSupport ? false, cudatoolkit ? null, cudnn ? null
-, mklSupport ? false , mkl ? null}:
-
-let
-  cudaVersion = builtins.splitVersion cudatoolkit.version;
-  cudaMajor = builtins.elemAt cudaVersion 0;
-  cudaMinor = builtins.elemAt cudaVersion 1;
-  buildtype =
-    let
-      arch = if cudaSupport then "cu${cudaMajor}${cudaMinor}" else "cpu";
-      nightly = if version == "nightly" then "${version}/" else "";
-    in
-      nightly + arch;
-in
-
-assert cudaSupport == false || (cudatoolkit != null && cudnn != null);
-assert mklSupport == false || mkl != null;
-assert version == "1.1" || version == "nightly";
+, version ? "1.2", mkSrc, buildtype
+, mklml ? null
+, libcxx ? null
+}:
 
 stdenv.mkDerivation rec {
   name = "libtorch-${version}";
   inherit version;
 
   src = mkSrc buildtype;
+  mklmlPath  = mklml.outPath;
+  libcxxPath  = libcxx.outPath;
 
-  propagatedBuildInputs = []
-    ++ stdenv.lib.optionals cudaSupport [ cudatoolkit cudnn ]
-    ++ stdenv.lib.optionals mklSupport [ mkl ];
+  propagatedBuildInputs = if stdenv.isDarwin then [ mklml libcxx ] else [];
 
+  preFixup = stdenv.lib.optionalString stdenv.isDarwin ''
+    echo "-- before fixup --"
+    for f in $(ls $out/lib/*.dylib); do
+        otool -L $f
+    done
+    for f in $(ls $out/lib/*.dylib); do
+      install_name_tool -id $out/lib/$(basename $f) $f || true
+    done
+    install_name_tool -change @rpath/libshm.dylib $out/lib/libshm.dylib $out/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libtorch.dylib $out/lib/libtorch.dylib $out/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libtorch.dylib
+    install_name_tool -change @rpath/libtorch.dylib $out/lib/libtorch.dylib $out/lib/libcaffe2_observers.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libcaffe2_observers.dylib
+    install_name_tool -change @rpath/libtorch.dylib $out/lib/libtorch.dylib $out/lib/libcaffe2_module_test_dynamic.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libcaffe2_module_test_dynamic.dylib
+    install_name_tool -change @rpath/libtorch.dylib $out/lib/libtorch.dylib $out/lib/libcaffe2_detectron_ops.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libcaffe2_detectron_ops.dylib
+    install_name_tool -change @rpath/libtorch.dylib $out/lib/libtorch.dylib $out/lib/libshm.dylib
+    install_name_tool -change @rpath/libc10.dylib $out/lib/libc10.dylib $out/lib/libshm.dylib
+
+    for i in libtorch.dylib libcaffe2_detectron_ops.dylib libcaffe2_module_test_dynamic.dylib libcaffe2_observers.dylib libshm.dylib libtorch_python.dylib ; do 
+      install_name_tool -change @rpath/libmklml.dylib $mklmlPath/lib/libmklml.dylib $out/lib/$i
+      install_name_tool -change @rpath/libiomp5.dylib $mklmlPath/lib/libiomp5.dylib $out/lib/$i
+      install_name_tool -change /usr/lib/libc++.1.dylib $libcxxPath/lib/libc++.1.0.dylib $out/lib/$i
+    done
+    install_name_tool -change /usr/lib/libc++.1.dylib $libcxxPath/lib/libc++.1.0.dylib $out/lib/libc10.dylib
+    echo "-- after fixup --"
+    for f in $(ls $out/lib/*.dylib); do
+        otool -L $f
+    done
+  '';
   installPhase = ''
     ls $src
     mkdir $out
@@ -38,16 +55,10 @@ stdenv.mkDerivation rec {
     cp -r {$src,$out}/share/
   '';
 
-  # postInstall = ''
-  #   # Make boost header paths relative so that they are not runtime dependencies
-  #   cd "$dev" && find include \( -name '*.hpp' -or -name '*.h' -or -name '*.ipp' \) \
-  #     -exec sed '1i#line 1 "{}"' -i '{}' \;
-  # '';
-
   meta = with stdenv.lib; {
     description = "libtorch";
     homepage = https://pytorch.org/;
     license = licenses.bsd3;
-    platforms = with platforms; linux ++ stdenv.lib.optionals (!cudaSupport) darwin;
+    platforms = with platforms; linux ++ darwin;
   };
 }
