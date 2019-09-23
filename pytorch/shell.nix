@@ -5,12 +5,12 @@ let
   pythonWith =
     let
       mypython = python.override {
-        packageOverrides = self: super: {
+        packageOverrides = self: super: rec {
           pytorch = super.callPackage ./. { };
         };
         self = mypython;
       };
-    in mypython.withPackages(ps: [ ps.pytorch ps.tensorflow-tensorboard]);
+    in mypython.withPackages(ps: [ ps.pytorch ]);
 in
 
 pkgs.mkShell {
