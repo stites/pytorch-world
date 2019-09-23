@@ -55,6 +55,8 @@ stdenv.mkDerivation rec {
     cp -r {$src,$out}/share/
   '';
 
+  dontStrip = true;
+
   meta = with stdenv.lib; {
     description = "libtorch";
     homepage = https://pytorch.org/;
