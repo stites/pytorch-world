@@ -13,7 +13,7 @@
   ninja,
 
   # dependencies for torch.utils.tensorboard
-  tensorboardSupport ? true, pillow, six, future, tensorflow-tensorboard, tensorflow,
+  tensorboardSupport ? true, pillow, six, future, tensorflow-tensorboard,
 
   utillinux, which, bash }:
 
@@ -170,7 +170,7 @@ in buildPythonPackage rec {
     pyyaml
   ] ++ lib.optionals openMPISupport [ my_openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing
-    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard tensorflow];
+    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
 
   doCheck = false;
   checkInputs = [ hypothesis ninja ];
