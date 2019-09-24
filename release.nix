@@ -1,5 +1,5 @@
 { pkgs ? import ./pin/nixpkgs.nix {}
-, python ? pkgs.python3, pythonPackages ? pkgs.python36Packages
+, python ? pkgs.python36, pythonPackages ? pkgs.python36Packages
 }:
 
 let

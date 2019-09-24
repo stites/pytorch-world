@@ -32,6 +32,7 @@ let
   };
   my_magma = magma.override { cudatoolkit = cudatoolkit; inherit mklSupport mkl; };
   my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
+  my_tensorboard = if mklSupport && tensorboardSupport then tensorflow-tensorboard.override {numpy = my_numpy;} else tensorflow-tensorboard;
   my_openmpi = if openMPISupport then openmpi.override { inherit cudaSupport cudatoolkit; } else openmpi;
 
   # Give an explicit list of supported architectures for the build, See:
@@ -170,7 +171,7 @@ in buildPythonPackage rec {
     pyyaml
   ] ++ lib.optionals openMPISupport [ my_openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing
-    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
+    ++ lib.optionals tensorboardSupport [pillow six future my_tensorboard];
 
   doCheck = false;
   checkInputs = [ hypothesis ninja ];
