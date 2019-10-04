@@ -28,10 +28,11 @@ let
         buildBinaries = true;
       };
 
+      numpy = super.numpy.override { blas = pkgs.mkl; };
       pytorch = if gpu then pytorchWithCuda10Full else pytorchFull;
       probtorch = self.callPackage ./. { inherit pytorch; };
     in
-      { inherit probtorch pytorch; };
+      { inherit numpy probtorch pytorch; };
 
   generic = { gpu }:
     let

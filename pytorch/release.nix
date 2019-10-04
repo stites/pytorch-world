@@ -5,6 +5,7 @@ let
     let
       mypython = python.override {
         packageOverrides = self: super: {
+          numpy = super.numpy.override { blas = pkgs.mkl; };
           pytorch = self.callPackage ./. ({} // args);
         };
         self = mypython;
@@ -65,7 +66,7 @@ in rec {
 
   pytorch-cu-mkl = generic {
     args = {
-      mklSupport = true; magma = magma_250;
+      mklSupport = true; magma = magma_250mkl;
       cudaSupport = true;
       cudatoolkit = pkgs.cudatoolkit_10_0;
       cudnn = pkgs.cudnn_cudatoolkit_10_0;
@@ -75,8 +76,8 @@ in rec {
 
   pytorch-cu-mkl-openmpi = generic {
     args = {
-      mklSupport = true; magma = magma_250;
-      openMPISupport = true; openmpi = openmpi_cpu; # openmpi will be altered to use the appropriate cudatoolkit
+      mklSupport = true; magma = magma_250mkl;
+      openMPISupport = true; openmpi = openmpi_cuda; # openmpi will be altered to use the appropriate cudatoolkit
       cudaSupport = true;
       cudatoolkit = pkgs.cudatoolkit_10_0;
       cudnn = pkgs.cudnn_cudatoolkit_10_0;
@@ -86,8 +87,8 @@ in rec {
 
   pytorchWithCuda10Full = generic {
     args = {
-      mklSupport = true; magma = magma_250;
-      openMPISupport = true; openmpi = openmpi_cpu;
+      mklSupport = true; magma = magma_250mkl;
+      openMPISupport = true; openmpi = openmpi_cuda;
       cudaSupport = true;
       cudatoolkit = pkgs.cudatoolkit_10_0;
       cudnn = pkgs.cudnn_cudatoolkit_10_0;

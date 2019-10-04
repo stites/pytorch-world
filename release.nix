@@ -19,5 +19,5 @@ in
   inherit (probtorch-releases) probtorch probtorchWithCuda;
 
   libtorch = (pythonPackages.callPackage ./pytorch {}).dev;
-  libtorch-cuda = (pythonPackages.callPackage ./pytorch { cudaSupport = true; magma = pytorch-releases.magma_250; }).dev;
+  libtorch-cuda = (pythonPackages.callPackage ./pytorch { cudaSupport = true; magma = pkgs.callPackage ./deps/magma_250.nix { }; }).dev;
 }

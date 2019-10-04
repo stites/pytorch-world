@@ -6,7 +6,6 @@
   buildBinaries ? false,
   cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
-
   linkFarm, symlinkJoin,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
@@ -17,12 +16,28 @@
 
   utillinux, which, bash }:
 
-assert cudnn == null || cudatoolkit != null;
+assert !openMPISupport || openmpi != null;
+assert !tensorboardSupport || tensorflow-tensorboard != null;
+
+# assert that everything needed for cuda is present and that the correct cuda versions are used
 assert !cudaSupport || cudatoolkit != null;
+assert cudnn == null || cudatoolkit != null;
 assert !cudaSupport || (let majorIs = lib.versions.major cudatoolkit.version;
                         in majorIs == "9" || majorIs == "10");
+
+let
+  hasDependency = dep: pkg: lib.lists.any (inp: inp == dep) pkg.buildInputs;
+  matchesCudatoolkit = hasDependency cudatoolkit;
+  matchesMkl = hasDependency mkl;
+in
+# confirm that cudatoolkits are sync'd across dependencies
+assert !(openMPISupport && cudaSupport) || matchesCudatoolkit openmpi;
+assert !cudaSupport || matchesCudatoolkit magma;
+
+# confirm that mkl is sync'd across dependencies
 assert !mklSupport || mkl != null;
-assert !openMPISupport || openmpi != null;
+assert !(mklSupport && cudaSupport) || matchesMkl magma;
+assert !mklSupport || (numpy.blasImplementation == "mkl" && numpy.blas == mkl);
 
 let
   cudatoolkit_joined = symlinkJoin {
@@ -30,10 +45,6 @@ let
     # nccl is here purely for semantic grouping it could be moved to nativeBuildInputs
     paths = [ cudatoolkit.out cudatoolkit.lib nccl.dev nccl.out ];
   };
-  my_magma = magma.override { cudatoolkit = cudatoolkit; inherit mklSupport mkl; };
-  my_numpy = if mklSupport && numpy.blasImplementation != "mkl" then numpy.override { blas = mkl; } else numpy;
-  my_tensorboard = if mklSupport && tensorboardSupport then tensorflow-tensorboard.override {numpy = my_numpy;} else tensorflow-tensorboard;
-  my_openmpi = if openMPISupport then openmpi.override { inherit cudaSupport cudatoolkit; } else openmpi;
 
   # Give an explicit list of supported architectures for the build, See:
   # - pytorch bug report: https://github.com/pytorch/pytorch/issues/23573
@@ -153,7 +164,7 @@ in buildPythonPackage rec {
   #
   # Also of interest: pytorch ignores CXXFLAGS uses CFLAGS for both C and C++:
   # https://github.com/pytorch/pytorch/blob/v1.2.0/setup.py#L17
-  NIX_CFLAGS_COMPILE = lib.optionals (my_numpy.blasImplementation == "mkl") [ "-Wno-error=array-bounds" ];
+  NIX_CFLAGS_COMPILE = lib.optionals (numpy.blas == mkl) [ "-Wno-error=array-bounds" ];
 
   nativeBuildInputs = [
     cmake
@@ -163,20 +174,21 @@ in buildPythonPackage rec {
   ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
 
   buildInputs = [
-    my_numpy.blas
-  ] ++ lib.optionals cudaSupport [ cudnn my_magma nccl ]
+    numpy.blas
+  ] ++ lib.optionals cudaSupport [ cudnn magma nccl ]
     ++ lib.optionals stdenv.isLinux [ numactl ];
 
   propagatedBuildInputs = [
     cffi
-    my_numpy
+    numpy
     pyyaml
-  ] ++ lib.optionals openMPISupport [ my_openmpi ]
+  ] ++ lib.optionals openMPISupport [ openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing
-    ++ lib.optionals tensorboardSupport [pillow six future my_tensorboard];
+    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
 
-  doCheck = false;
   checkInputs = [ hypothesis ninja ];
+
+  doCheck = false; # tests take a long time for channel release, so doCheck should be overridden only when developing
   checkPhase = "${cudaStubEnv}python test/run_test.py"
     + " --exclude utils" # utils requires git, which is not allowed in the check phase
 
@@ -190,34 +202,35 @@ in buildPythonPackage rec {
   '';
 
   postFixup = stdenv.lib.optionalString stdenv.isDarwin ''
-      for f in $(ls $dev/lib/*.dylib); do
-          install_name_tool -id $dev/lib/$(basename $f) $f || true
-      done
+    for f in $(ls $dev/lib/*.dylib); do
+        install_name_tool -id $dev/lib/$(basename $f) $f || true
+    done
 
-      install_name_tool -change @rpath/libshm.dylib $dev/lib/libshm.dylib $dev/lib/libtorch_python.dylib
-      install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libtorch_python.dylib
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libshm.dylib $dev/lib/libshm.dylib $dev/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libtorch_python.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libtorch_python.dylib
 
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libtorch.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libtorch.dylib
 
-      install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_observers.dylib
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_observers.dylib
+    install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_observers.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_observers.dylib
 
-      install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_module_test_dynamic.dylib
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_module_test_dynamic.dylib
+    install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_module_test_dynamic.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_module_test_dynamic.dylib
 
-      install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_detectron_ops.dylib
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_detectron_ops.dylib
+    install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libcaffe2_detectron_ops.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libcaffe2_detectron_ops.dylib
 
-      install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libshm.dylib
-      install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libshm.dylib
+    install_name_tool -change @rpath/libtorch.dylib $dev/lib/libtorch.dylib $dev/lib/libshm.dylib
+    install_name_tool -change @rpath/libc10.dylib $dev/lib/libc10.dylib $dev/lib/libshm.dylib
   '';
+
 
   meta = {
     description = "Open source, prototype-to-production deep learning platform";
     homepage    = https://pytorch.org/;
     license     = lib.licenses.bsd3;
     platforms   = with lib.platforms; [ linux ] ++ lib.optionals (!cudaSupport) [ darwin ];
-    maintainers = with lib.maintainers; [ teh thoughtpolice stites ];
+    maintainers = with lib.maintainers; [ teh thoughtpolice stites tscholak ]; # tscholak esp. for darwin-related builds
   };
 }
