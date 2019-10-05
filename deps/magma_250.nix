@@ -27,6 +27,10 @@ in stdenv.mkDerivation {
 
   enableParallelBuilding=true;
 
+  preConfigure = ''
+    export CC=${cudatoolkit.cc}/bin/gcc CXX=${cudatoolkit.cc}/bin/g++
+  '';
+
   # we will not build tests as erroring on compilation
   buildPhase = ''
     runHook preBuild

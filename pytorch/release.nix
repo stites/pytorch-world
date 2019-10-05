@@ -97,5 +97,16 @@ in rec {
       buildBinaries = true;
     };
   };
+
+  pytorchWithCudaFull = generic {
+    args = {
+      mklSupport = true;
+      openMPISupport = true; openmpi = pkgs.callPackage ../deps/openmpi.nix { cudaSupport = true; };
+      cudaSupport = true;
+      magma = pkgs.callPackage ../deps/magma_250.nix { mklSupport = true; };
+      buildNamedTensor = true;
+      buildBinaries = true;
+    };
+  };
 }
 
