@@ -5,7 +5,7 @@ let
 in
 pkgs.mkShell {
   buildInputs = [
-    build.nightly.libtorch_cudatoolkit_10_0
+    build.libtorch_cudatoolkit_10_1
     pkgs.clang_7
   ];
 }
