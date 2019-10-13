@@ -17,7 +17,7 @@ in
 {
   libmklml = libmklml {};
   libtorch_cpu = callCpu {
-    version = "1.2";
+    version = "1.3";
     buildtype = "cpu";
     mkSrc = buildtype:
       if stdenv.hostPlatform.system == "x86_64-linux" then
