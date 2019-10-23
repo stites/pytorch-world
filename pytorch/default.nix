@@ -5,7 +5,7 @@
   buildNamedTensor ? false,
   buildBinaries ? false,
   cudaArchList ? null,
-  fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
+  fetchFromGitHub, lib, numpy, pyyaml, cffi, click, typing, cmake, hypothesis, numactl,
   linkFarm, symlinkJoin,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
@@ -14,7 +14,7 @@
   # dependencies for torch.utils.tensorboard
   tensorboardSupport ? true, pillow, six, future, tensorflow-tensorboard,
 
-  utillinux, which, bash }:
+  utillinux, which, isPy3k }:
 
 assert !openMPISupport || openmpi != null;
 assert !tensorboardSupport || tensorflow-tensorboard != null;
@@ -110,6 +110,7 @@ let
 in buildPythonPackage rec {
   version = "1.2.0";
   pname = "pytorch";
+  disabled = !isPy3k;
 
   outputs = [
     "out"   # output standard python package
@@ -180,6 +181,7 @@ in buildPythonPackage rec {
 
   propagatedBuildInputs = [
     cffi
+    click
     numpy
     pyyaml
   ] ++ lib.optionals openMPISupport [ openmpi ]
