@@ -1,8 +1,7 @@
 { stdenv, fetchurl, fetchgit, buildPythonPackage, python, pythonOlder,
   cudaSupport ? false, cudatoolkit ? null, cudnn ? null, nccl ? null, magma ? null,
-  mklSupport ? false, mkl ? null,
+  mklSupport ? false, mkl ? null, openblas ? null,
   openMPISupport ? false, openmpi ? null,
-  buildNamedTensor ? false,
   buildBinaries ? false,
   cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, click, typing, cmake, hypothesis, numactl,
@@ -12,12 +11,11 @@
   ninja,
 
   # dependencies for torch.utils.tensorboard
-  tensorboardSupport ? true, pillow, six, future, tensorflow-tensorboard,
+  pillow, six, future, tensorflow-tensorboard, protobuf,
 
   utillinux, which, isPy3k }:
 
 assert !openMPISupport || openmpi != null;
-assert !tensorboardSupport || tensorflow-tensorboard != null;
 
 # assert that everything needed for cuda is present and that the correct cuda versions are used
 assert !cudaSupport || cudatoolkit != null;
@@ -35,9 +33,8 @@ assert !(openMPISupport && cudaSupport) || matchesCudatoolkit openmpi;
 assert !cudaSupport || matchesCudatoolkit magma;
 
 # confirm that mkl is sync'd across dependencies
-assert !mklSupport || mkl != null;
 assert !(mklSupport && cudaSupport) || matchesMkl magma;
-assert !mklSupport || (numpy.blasImplementation == "mkl" && numpy.blas == mkl);
+assert (mklSupport && mkl != null) || openblas != null;
 
 let
   cudatoolkit_joined = symlinkJoin {
@@ -108,7 +105,7 @@ let
     "LD_LIBRARY_PATH=${cudaStub}\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ";
 
 in buildPythonPackage rec {
-  version = "1.2.0";
+  version = "1.3.1";
   pname = "pytorch";
   disabled = !isPy3k;
 
@@ -122,10 +119,8 @@ in buildPythonPackage rec {
     repo   = "pytorch";
     rev    = "v${version}";
     fetchSubmodules = true;
-    sha256 = "1biyq2p48chakf2xw7hazzqmr5ps1nx475ql8vkmxjg5zaa071cz";
+    sha256 = "07ga9806c5q02hsdybwdw9nc0r1a8dinwjakyg6wlrccclc027lq";
   };
-
-  dontUseCmakeConfigure = true;
 
   preConfigure = lib.optionalString cudaSupport ''
     export TORCH_CUDA_ARCH_LIST="${lib.strings.concatStringsSep ";" final_cudaArchList}"
@@ -133,6 +128,32 @@ in buildPythonPackage rec {
   '' + lib.optionalString (cudaSupport && cudnn != null) ''
     export CUDNN_INCLUDE_DIR=${cudnn}/include
   '';
+
+  # Use pytorch's custom configurations
+  dontUseCmakeConfigure = true;
+
+  BUILD_CUSTOM_PROTOBUF="OFF";
+  # USE_MKLDNN = if mklSupport then "ON" else "OFF";
+  # CAFFE2_LINK_LOCAL_PROTOBUF="ON";
+  preBuild = lib.strings.concatStringsSep "\n" [
+    ''export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:${if mklSupport then mkl else openblas}:${protobuf}"''
+    "export CMAKE_MODULE_PATH=$CMAKE_MODULE_PATH:${protobuf.src}/cmake"
+    "export BUILD_CUSTOM_PROTOBUF=OFF"
+    "export CAFFE2_LINK_LOCAL_PROTOBUF=ON"
+    "export PROTOBUF_INCLUDE_DIRS=${protobuf}/include"
+    "export PROTOBUF_LIBRARIES=${protobuf}/lib"
+    "export Protobuf_LIBRARY=${protobuf}/lib"
+    "export PROTOBUF_LIBRARY=${protobuf}/lib"
+    "python setup.py build --cmake-only"
+    (lib.strings.concatStringsSep " " [
+      "${cmake}/bin/cmake build"
+      "-DBLAS=${if mklSupport then "MKL" else "OpenBLAS"}"
+      "-DPROTOBUF_INCLUDE_DIRS=${protobuf}/include"
+      "-DPROTOBUF_LIBRARIES=${protobuf}/lib"
+      "-DProtobuf_LIBRARY=${protobuf}/lib"
+      "-DPROTOBUF_LIBRARY=${protobuf}/lib"
+    ])
+  ];
 
   preFixup = ''
     function join_by { local IFS="$1"; shift; echo "$*"; }
@@ -155,7 +176,6 @@ in buildPythonPackage rec {
   PYTORCH_BUILD_VERSION = version;
   PYTORCH_BUILD_NUMBER = 0;
 
-  BUILD_NAMEDTENSOR = buildNamedTensor;  # experimental feature
   USE_SYSTEM_NCCL=true;                  # don't build pytorch's third_party NCCL
 
   # Suppress a weird warning in mkl-dnn, part of ideep in pytorch
@@ -165,18 +185,18 @@ in buildPythonPackage rec {
   #
   # Also of interest: pytorch ignores CXXFLAGS uses CFLAGS for both C and C++:
   # https://github.com/pytorch/pytorch/blob/v1.2.0/setup.py#L17
-  NIX_CFLAGS_COMPILE = lib.optionals (numpy.blas == mkl) [ "-Wno-error=array-bounds" ];
+  NIX_CFLAGS_COMPILE = lib.optionals mklSupport [ "-Wno-error=array-bounds" ];
 
   nativeBuildInputs = [
     cmake
     utillinux
     which
     ninja
+    (if mklSupport then mkl else openblas)
   ] ++ lib.optionals cudaSupport [ cudatoolkit_joined ];
 
-  buildInputs = [
-    numpy.blas
-  ] ++ lib.optionals cudaSupport [ cudnn magma nccl ]
+  buildInputs = [ ]
+    ++ lib.optionals cudaSupport [ cudnn magma nccl ]
     ++ lib.optionals stdenv.isLinux [ numactl ];
 
   propagatedBuildInputs = [
@@ -184,15 +204,17 @@ in buildPythonPackage rec {
     click
     numpy
     pyyaml
+    # the following are required for tensorboard support
+    pillow six future tensorflow-tensorboard protobuf
   ] ++ lib.optionals openMPISupport [ openmpi ]
-    ++ lib.optional (pythonOlder "3.5") typing
-    ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
+    ++ lib.optional (pythonOlder "3.5") typing;
 
   checkInputs = [ hypothesis ninja ];
 
-  doCheck = false; # tests take a long time for channel release, so doCheck should be overridden only when developing
+  doCheck = true; # tests take a long time for channel release, so doCheck should be overridden only when developing
   checkPhase = "${cudaStubEnv}python test/run_test.py"
     + " --exclude utils" # utils requires git, which is not allowed in the check phase
+    + " tensorboard"
 
     # Other tests which have been disabled in previous nix derivations of pytorch.
     # --exclude dataloader sparse torch utils thd_distributed distributed cpp_extensions
