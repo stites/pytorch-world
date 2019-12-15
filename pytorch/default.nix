@@ -3,8 +3,10 @@
   mklSupport ? false, mkl ? null, openblas ? null,
   openMPISupport ? false, openmpi ? null,
   buildBinaries ? false,
+  buildDocs ? false,
+  useNixProtobuf ? false,
   cudaArchList ? null,
-  fetchFromGitHub, lib, numpy, pyyaml, cffi, click, typing, cmake, hypothesis, numactl,
+  fetchFromGitHub, lib, numpy, pyyaml, cffi, click, typing, cmake, hypothesis, numactl, psutil,
   linkFarm, symlinkJoin,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
@@ -22,6 +24,9 @@ assert !cudaSupport || cudatoolkit != null;
 assert cudnn == null || cudatoolkit != null;
 assert !cudaSupport || (let majorIs = lib.versions.major cudatoolkit.version;
                         in majorIs == "9" || majorIs == "10");
+
+# Using nix's protobuf instead of the bundled version with pytorch is considered broken.
+assert useNixProtobuf == false;
 
 let
   hasDependency = dep: pkg: lib.lists.any (inp: inp == dep) pkg.buildInputs;
@@ -42,6 +47,9 @@ let
     # nccl is here purely for semantic grouping it could be moved to nativeBuildInputs
     paths = [ cudatoolkit.out cudatoolkit.lib nccl.dev nccl.out ];
   };
+
+  mklMajor = lib.versions.major mkl.version;
+  mklMinor = lib.versions.minor mkl.version;
 
   # Give an explicit list of supported architectures for the build, See:
   # - pytorch bug report: https://github.com/pytorch/pytorch/issues/23573
@@ -132,26 +140,34 @@ in buildPythonPackage rec {
   # Use pytorch's custom configurations
   dontUseCmakeConfigure = true;
 
-  BUILD_CUSTOM_PROTOBUF="OFF";
-  # USE_MKLDNN = if mklSupport then "ON" else "OFF";
-  # CAFFE2_LINK_LOCAL_PROTOBUF="ON";
-  preBuild = lib.strings.concatStringsSep "\n" [
-    ''export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:${if mklSupport then mkl else openblas}:${protobuf}"''
-    "export CMAKE_MODULE_PATH=$CMAKE_MODULE_PATH:${protobuf.src}/cmake"
-    "export BUILD_CUSTOM_PROTOBUF=OFF"
-    "export CAFFE2_LINK_LOCAL_PROTOBUF=ON"
-    "export PROTOBUF_INCLUDE_DIRS=${protobuf}/include"
-    "export PROTOBUF_LIBRARIES=${protobuf}/lib"
-    "export Protobuf_LIBRARY=${protobuf}/lib"
-    "export PROTOBUF_LIBRARY=${protobuf}/lib"
+  BUILD_NAMEDTENSOR = true;
+  BUILD_DOCS = buildDocs;
+  USE_MKLDNN = mklSupport;
+  preBuild = with lib.strings; concatStringsSep "\n" [
+    ''export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:${if mklSupport then mkl else openblas}"''
+    (optionalString useNixProtobuf (
+      concatStringsSep "\n" [
+        ''export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:${protobuf}"''
+        "export CMAKE_MODULE_PATH=$CMAKE_MODULE_PATH:${protobuf.src}/cmake"
+        "export BUILD_CUSTOM_PROTOBUF=OFF"
+        "export CAFFE2_LINK_LOCAL_PROTOBUF=ON"
+        "export PROTOBUF_INCLUDE_DIRS=${protobuf}/include"
+        "export PROTOBUF_LIBRARIES=${protobuf}/lib"
+        "export Protobuf_LIBRARY=${protobuf}/lib"
+        "export PROTOBUF_LIBRARY=${protobuf}/lib"
+      ]))
     "python setup.py build --cmake-only"
-    (lib.strings.concatStringsSep " " [
+    (concatStringsSep " " [
       "${cmake}/bin/cmake build"
       "-DBLAS=${if mklSupport then "MKL" else "OpenBLAS"}"
-      "-DPROTOBUF_INCLUDE_DIRS=${protobuf}/include"
-      "-DPROTOBUF_LIBRARIES=${protobuf}/lib"
-      "-DProtobuf_LIBRARY=${protobuf}/lib"
-      "-DPROTOBUF_LIBRARY=${protobuf}/lib"
+      (optionalString useNixProtobuf (
+        concatStringsSep " " [
+         # certain dependencies seem to rely on different environment variables
+         "-DPROTOBUF_INCLUDE_DIRS=${protobuf}/include"
+         "-DPROTOBUF_LIBRARIES=${protobuf}/lib"
+         "-DProtobuf_LIBRARY=${protobuf}/lib"
+         "-DPROTOBUF_LIBRARY=${protobuf}/lib"
+       ]))
     ])
   ];
 
@@ -169,6 +185,7 @@ in buildPythonPackage rec {
       strip2 $f
     done
   '';
+
 
   # Override the (weirdly) wrong version set by default. See
   # https://github.com/NixOS/nixpkgs/pull/52437#issuecomment-449718038
@@ -204,6 +221,7 @@ in buildPythonPackage rec {
     click
     numpy
     pyyaml
+    psutil
     # the following are required for tensorboard support
     pillow six future tensorflow-tensorboard protobuf
   ] ++ lib.optionals openMPISupport [ openmpi ]
@@ -212,13 +230,22 @@ in buildPythonPackage rec {
   checkInputs = [ hypothesis ninja ];
 
   doCheck = true; # tests take a long time for channel release, so doCheck should be overridden only when developing
-  checkPhase = "${cudaStubEnv}python test/run_test.py"
-    + " --exclude utils" # utils requires git, which is not allowed in the check phase
-    + " tensorboard"
+  checkPhase = with lib.strings; concatStringsSep " " [
+    # MKL 2019.5-only workaround. See: https://github.com/NixOS/nixpkgs/issues/75611
+    (optionalString (mklSupport && mklMajor == "2019" && mklMinor == "5") "KMP_INIT_AT_FORK=FALSE ")
+    cudaStubEnv
+    "python test/run_test.py"
+    "--exclude"
+    (concatStringsSep " " [
+      "utils" # utils requires git, which is not allowed in the check phase
 
-    # Other tests which have been disabled in previous nix derivations of pytorch.
-    # --exclude dataloader sparse torch utils thd_distributed distributed cpp_extensions
-    ;
+      # "dataloader" # psutils correctly finds and triggers multiprocessing, but is too sandboxed to run -- resulting in numerous errors
+      # ^^^^^^^^^^^^ NOTE: while test_dataloader does return errors, these are acceptable errors and do not interfere with the build
+
+      # tensorboard has acceptable failures for pytorch 1.3.x due to dependencies on tensorboard-plugins
+      (with lib.versions; optionalString (major version == "1" && minor version == "3") "tensorboard")
+    ])
+  ];
   postInstall = ''
     mkdir $dev
     cp -r $out/${python.sitePackages}/torch/lib     $dev/lib

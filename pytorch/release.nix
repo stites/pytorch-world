@@ -4,45 +4,28 @@ with pkgs.lib.attrsets;
 
 let
   protobuf = pkgs.protobuf;
-  generic = args:
-    let
-      mypython = python.override {
-        packageOverrides = self: super: {
-          numpy = super.numpy.override { blas =
-            if !(hasAttr "mklSupport" args)
-            then pkgs.blas
-            else if args.mklSupport
-              then pkgs.mkl
-              else pkgs.openblas;
-          };
-          pytorch = self.callPackage ./. ({ } // args);
-        };
-        self = mypython;
-      };
-    in mypython.withPackages(ps: [ ps.pytorch ]);
-
+  generic = args: unstableGeneric null args;
   unstableGeneric = pinpath: args:
     let
       unstable = builtins.fromJSON (builtins.readFile pinpath);
       mypython = python.override {
-        packageOverrides = self: super: {
-          numpy = super.numpy.override { blas =
-            if !(hasAttr "mklSupport" args)
-            then pkgs.blas
-            else if args.mklSupport
-              then pkgs.mkl
-              else pkgs.openblas;
-          };
-          pytorch = (self.callPackage ./. ({ } // args)).overrideAttrs(old: {
-            version = unstable.rev;
-            src = pkgs.fetchFromGitHub {
-              owner  = "pytorch";
-              repo   = "pytorch";
-              rev    = unstable.rev;
-              fetchSubmodules = true;
-              sha256 = unstable.sha256;
-            };
-          });
+        packageOverrides = self: super: rec {
+          numpy = if (hasAttr "mklSupport" args && args.mklSupport)
+                  then super.numpy.override { blas = pkgs.mkl; }
+                  else super.numpy;
+          stablept = (self.callPackage ./. ({ } // args));
+          pytorch =
+            if pinpath == null then stablept
+            else stablept.overrideAttrs(old: {
+              version = unstable.rev;
+              src = pkgs.fetchFromGitHub {
+                owner  = "pytorch";
+                repo   = "pytorch";
+                rev    = unstable.rev;
+                fetchSubmodules = true;
+                sha256 = unstable.sha256;
+              };
+            });
         };
         self = mypython;
       };

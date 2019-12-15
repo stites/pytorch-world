@@ -8,13 +8,24 @@ Any user-submitted packages are welcome : ).
 Releases
 ============================
 
+**`release.nix` is only used for constructing build artifacts for cachix.
+To pull in pytorch to your project you must call `./pytorch/default.nix` directly.
+Refer to [`./probtorch`][ptre] for an example of how to do this.**
+
+[ptre]:https://github.com/stites/pytorch-world/blob/unstable/probtorch/release.nix#L16-L21
+
 This repository will tag releases according to the working version of pytorch.
 There will also a post-fixed snapshot number when new packages are working.
 All releases will only be tested for python-3.6 unless otherwise noted.
 
 - `unstable`:
+  - `buildDocs` flag added
+  - `buildNamedTensor` is true by default
+  - `psutil` is added to buildInputs for multi-core optimized dataloader.
+  - adds experimental, but disabled, code to leverage nix's protobuf
+  - uses CMake directly for pytorch builds
   - darwin support for `dev` outputs
-  - disabled test phase (for faster builds). Override `doCheck` to run the test suite. 
+  - disabled test phase (for faster builds). Override `doCheck` to run the test suite.
   - adds a cudaArchList argument that allows users to test on the latest nvidia hardware without waiting for this package.
   - adds .dev output which gives top-level access to generated C/C++ code (libtorch).
 
@@ -62,7 +73,7 @@ Using this in your projects
 ============================
 
 Suggested use is to pull in `pytorch-world` as a git submodule under some `nix/` folder and refer to `probtorch/release.nix` for an example of how to depend on this library.
-Do not reference `release.nix` files as they don't generate site-packages and only output final python binaries.
+**Do not reference `release.nix` files as they don't generate site-packages and only output final python binaries.**
 
 Cachix
 =============
