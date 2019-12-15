@@ -20,4 +20,11 @@ in
 
   libtorch = (pythonPackages.callPackage ./pytorch {}).dev;
   libtorch-cuda = (pythonPackages.callPackage ./pytorch { cudaSupport = true; }).dev;
+  libtorch-cuda10 = (pythonPackages.callPackage ./pytorch (rec {
+    cudaSupport = true;
+    cudatoolkit = pkgs.cudatoolkit_10_0;
+    cudnn = pkgs.cudnn_cudatoolkit_10_0;
+    nccl = pkgs.nccl_cudatoolkit_10;
+    magma = pkgs.magma.override { inherit cudatoolkit; };
+  })).dev;
 }

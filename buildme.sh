@@ -7,20 +7,18 @@ export BUILD=""
 trap 'noti -o -t "[EXIT-$?] from buildme.sh" -m "on build: $BUILD"' EXIT
 
 function buildit {
-  local PYTHON_ PYTHON_PACKAGES_ CODE_
+  local PYTHON CODE
   export BUILD="$1"
 
   if [[ "$2" == "py37" ]]; then
-    PYTHON_="pkgs.python37"
-    PYTHON_PACKAGES_="pkgs.python37Packages"
+    PYTHON="pytorch37"
   else
-    PYTHON_="pkgs.python36"
-    PYTHON_PACKAGES_="pkgs.python36Packages"
+    PYTHON="pytorch36"
   fi
-  nix-build -A "$BUILD" --arg python "$PYTHON_" --arg pythonPackages "$PYTHON_PACKAGES_" release.nix;
-  CODE_=$?
-  if [ "$CODE_" != "0" ]; then
-    exit $CODE_
+  echo "nix-build -A "$PYTHON.$BUILD" artifacts.nix"
+  CODE=$?
+  if [ "$CODE" != "0" ]; then
+    exit $CODE
   fi
 }
 

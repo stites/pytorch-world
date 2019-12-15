@@ -19,6 +19,7 @@ There will also a post-fixed snapshot number when new packages are working.
 All releases will only be tested for python-3.6 unless otherwise noted.
 
 - `unstable`:
+  - **Tested on**: `pytorch36.pytorch`, `pytorch36.pytorchWithMkl`, `pytorchWithCuda10`, `pytorchWithCuda10Mkl`
   - `buildDocs` flag added
   - `buildNamedTensor` is true by default
   - `psutil` is added to buildInputs for multi-core optimized dataloader.

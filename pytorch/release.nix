@@ -18,6 +18,7 @@ let
             if pinpath == null then stablept
             else stablept.overrideAttrs(old: {
               version = unstable.rev;
+              doCheck = true; # always run tests on unstable packages
               src = pkgs.fetchFromGitHub {
                 owner  = "pytorch";
                 repo   = "pytorch";
