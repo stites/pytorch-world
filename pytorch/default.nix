@@ -229,7 +229,7 @@ in buildPythonPackage rec {
 
   checkInputs = [ hypothesis ninja ];
 
-  doCheck = true; # tests take a long time for channel release, so doCheck should be overridden only when developing
+  doCheck = false; # tests take a long time for channel release, so doCheck should be overridden only when developing
   checkPhase = with lib.strings; concatStringsSep " " [
     # MKL 2019.5-only workaround. See: https://github.com/NixOS/nixpkgs/issues/75611
     (optionalString (mklSupport && mklMajor == "2019" && mklMinor == "5") "KMP_INIT_AT_FORK=FALSE ")
