@@ -20,6 +20,7 @@ All releases will only be tested for python-3.6 unless otherwise noted.
 
 - `unstable`:
   - **Tested on**: `pytorch36.pytorch`, `pytorch36.pytorchWithMkl`, `pytorchWithCuda10`, `pytorchWithCuda10Mkl`
+  - `libtorch` folder now pulls down the library file from pytorch.org while `.dev` outputs copy shared library files from the python derivation. For this reason, the `libtorch` folder is not built.
   - `buildDocs` flag added
   - `buildNamedTensor` is true by default
   - `psutil` is added to buildInputs for multi-core optimized dataloader.
@@ -50,20 +51,20 @@ Features
 
 The current features are supported:
 
-| **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     | libtorch-v1.3.1    |
-| ----------------------------------- | ------------------ | ------------------ | ------------------ |
-| vanilla                             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| mkl+mkldnn                          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| openMPI                             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| FBGEMM                              | :x:                | :heavy_check_mark: | :heavy_check_mark: |
-| Full CPU (all above)*               | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Full CPU + NamedTensors + Binaries  | :grey_exclamation: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA                                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA+NCCL                           | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA+NCCL+openMPI                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA+NCCL+openMPI+mkl               | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Full CUDA (all above)*              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| Full CUDA + NamedTensors + Binaries | :grey_exclamation: | :heavy_check_mark: | :heavy_check_mark: |
+| **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     | pytorch-v1.3.1     | libtorch-v1.3.1    |
+| ----------------------------------- | ------------------ | ------------------ | ------------------ | ------------------ |
+| vanilla                             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| mkl+mkldnn                          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| openMPI                             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| FBGEMM                              | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Full CPU (all above)*               | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Full CPU + NamedTensors + Binaries  | :grey_exclamation: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA                                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL                           | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL+openMPI                   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA+NCCL+openMPI+mkl               | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Full CUDA (all above)*              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| Full CUDA + NamedTensors + Binaries | :grey_exclamation: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
 The ":grey_exclamation:" means that namedtensors and binaries weren't attempted in pytorch-v1.1.0.
 

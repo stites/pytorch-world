@@ -4,18 +4,21 @@ set -e
 
 export BUILD=""
 
+if ! command -v noti 2&> /dev/null; then
+  echo "since the build-matrix is time consuming, use noti for status updates."
+fi
+
 trap 'noti -o -t "[EXIT-$?] from buildme.sh" -m "on build: $BUILD"' EXIT
 
 function buildit {
   local PYTHON CODE
-  export BUILD="$1"
-
   if [[ "$2" == "py37" ]]; then
     PYTHON="pytorch37"
   else
     PYTHON="pytorch36"
   fi
-  echo "nix-build -A "$PYTHON.$BUILD" artifacts.nix"
+  export BUILD="$PYTHON.$1"
+  nix-build -A "$BUILD" artifacts.nix
   CODE=$?
   if [ "$CODE" != "0" ]; then
     exit $CODE
@@ -33,7 +36,6 @@ function buildCPU {
       buildit "pytorchWithOpenMPI" "$2"
       buildit "pytorchWithMkl"     "$2"
       buildit "pytorchFull"        "$2"
-      buildit "libtorch"           "$2"
       ;;&
   esac
   noti -o -t "buildCPU on $2: Success"
@@ -65,18 +67,20 @@ function buildCUDA {
                buildit "pytorchWithCuda10"     "$2"
                buildit "pytorchWithCuda10Mkl"  "$2"
                buildit "pytorchWithCuda10Full" "$2"
-               buildit "libtorch-cuda"         "$2"
-               buildit "libtorch-cuda10"       "$2"
       ;;&
   esac
   noti -o -t "buildCUDA on $2: Success"
 }
 
 function buildAll {
-  buildCPU  "all" "py36"
-  buildCUDA "all" "py36"
-  buildCPU  "all" "py37"
-  buildCUDA "all" "py37"
+  for py in "py36" "py37"; do
+    buildCPU  "all" "$py"
+    buildCUDA "all" "$py"
+  done
+
+  # There is no environment variable to check for cachix. This will simply fail
+  # if you are not authorized to push.
+  export BUILD="cachix-push"
   nix-build artifacts.nix | cachix push pytorch-world
 }
 
