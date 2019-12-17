@@ -1,0 +1,7 @@
+{
+  "url": "https://github.com/pytorch/pytorch.git",
+  "rev": "2c51e0659b79dce39b27efb9d5e6755524eeb21c",
+  "date": "2019-10-08T08:58:53-07:00",
+  "sha256": "1rwwckhsh3avzgv3anr3bs1mrhxh08xdq9pd63jmdzw9cg3hxx14",
+  "fetchSubmodules": true
+}
