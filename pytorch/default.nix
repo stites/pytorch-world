@@ -221,13 +221,12 @@ in buildPythonPackage rec {
     click
     numpy
     pyyaml
-    psutil
     # the following are required for tensorboard support
     pillow six future tensorflow-tensorboard protobuf
   ] ++ lib.optionals openMPISupport [ openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing;
 
-  checkInputs = [ hypothesis ninja ];
+  checkInputs = [ hypothesis ninja psutil ];
 
   doCheck = false; # tests take a long time for channel release, so doCheck should be overridden only when developing
   checkPhase = with lib.strings; concatStringsSep " " [

@@ -25,7 +25,7 @@ All releases will only be tested for python-3.6 unless otherwise noted.
       `openblasCompat` by default](https://github.com/pytorch/pytorch/issues/30331), this might needed later on.
   - `buildDocs` flag added
   - `buildNamedTensor` is true by default
-  - `psutil` is added to buildInputs for multi-core optimized dataloader.
+  - `psutil` is added for testing dataloader (but sandboxing causes some acceptable errors).
   - adds experimental, but disabled, code to leverage nix's protobuf
   - uses CMake directly for pytorch builds
   - darwin support for `dev` outputs
