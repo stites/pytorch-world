@@ -33,12 +33,16 @@ function buildCPU {
     "mpi")    buildit "pytorchWithOpenMPI" "$2" ;;&
     "all")
       buildit "pytorch"            "$2"
+      noti -o -t "[1/4] pytorch on $2: Success"
       buildit "pytorchWithOpenMPI" "$2"
+      noti -o -t "[2/4] pytorchWithOpenMPI on $2: Success"
       buildit "pytorchWithMkl"     "$2"
+      noti -o -t "[3/4] pytorchWithMkl on $2: Success"
       buildit "pytorchFull"        "$2"
+      noti -o -t "[4/4] pytorchFull on $2: Success"
       ;;&
   esac
-  noti -o -t "buildCPU on $2: Success"
+  noti -o -t "buildCPU $1 on $2: Success"
 }
 
 function buildCUDA {
@@ -62,30 +66,48 @@ function buildCUDA {
       ;;&
     "all")
                buildit "pytorchWithCuda"       "$2"
+               noti -o -t "[1/6] pytorchWithCuda on $2: Success"
                buildit "pytorchWithCudaMkl"    "$2"
+               noti -o -t "[2/6] pytorchWithCudaMkl on $2: Success"
                buildit "pytorchWithCudaFull"   "$2"
+               noti -o -t "[3/6] pytorchWithCudaFull on $2: Success"
                buildit "pytorchWithCuda10"     "$2"
+               noti -o -t "[4/6] pytorchWithCuda10 on $2: Success"
                buildit "pytorchWithCuda10Mkl"  "$2"
+               noti -o -t "[5/6] pytorchWithCuda10Mkl on $2: Success"
                buildit "pytorchWithCuda10Full" "$2"
+               noti -o -t "[6/6] pytorchWithCuda10Full on $2: Success"
       ;;&
   esac
-  noti -o -t "buildCUDA on $2: Success"
+  noti -o -t "buildCUDA $1 on $2: Success"
 }
 
 function buildAll {
-  for py in "py36" "py37"; do
-    buildCPU  "all" "$py"
-    buildCUDA "all" "$py"
-  done
-
-  # There is no environment variable to check for cachix. This will simply fail
-  # if you are not authorized to push.
-  export BUILD="cachix-push"
-  nix-build artifacts.nix | cachix push pytorch-world
+  DONOTCHECK="$(grep 'doCheck = false' pytorch/default.nix | wc -l)"
+  if [ "$DONOTCHECK" == "1" ]; then
+    for py in "py36" "py37"; do
+      buildCPU  "all" "$py"
+      buildCUDA "all" "$py"
+    done
+    # There is no environment variable to check for cachix. This will simply fail
+    # if you are not authorized to push.
+    export BUILD="cachix-push"
+    nix-build artifacts.nix | cachix push pytorch-world
+  else
+    echo "buildAll was run with checkPhase on. This should not be done."
+  fi
 }
 
-buildCPU "mkl"    "py36"
-buildCUDA "mkl"   "py36"
-buildCPU "simple" "py36"
-buildCUDA "cu"    "py36"
+function buildfortests {
+  DONOTCHECK="$(grep 'doCheck = true' pytorch/default.nix | wc -l)"
+  if [ "$DONOTCHECK" == "1" ]; then
+    buildCPU "mkl"    "py36"
+    buildCUDA "mkl"   "py36"
+    buildCPU "simple" "py36"
+    buildCUDA "cu"    "py36"
+  else
+    echo "buildfortests is intended to be run run with checkPhase on."
+  fi
+}
 
+buildAll
