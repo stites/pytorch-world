@@ -21,6 +21,8 @@ All releases will only be tested for python-3.6 unless otherwise noted.
 - `unstable`:
   - **Tested on**: `pytorch36.pytorch`, `pytorch36.pytorchWithMkl`, `pytorchWithCuda10`, `pytorchWithCuda10Mkl`
   - `libtorch` folder now pulls down the library file from pytorch.org while `.dev` outputs copy shared library files from the python derivation. For this reason, the `libtorch` folder is not built.
+  - No longer uses numpy's blas -- as pytorch seems a bit opinionated about using openblas. [numpy uses
+      `openblasCompat` by default](https://github.com/pytorch/pytorch/issues/30331), this might needed later on.
   - `buildDocs` flag added
   - `buildNamedTensor` is true by default
   - `psutil` is added to buildInputs for multi-core optimized dataloader.
