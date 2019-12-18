@@ -1,112 +1,127 @@
-{ pkgs ? import ../pin/nixpkgs.nix {}, python ? pkgs.python36 }:
+{ pkgs ? import ../pin/nixpkgs.nix {}, python ? pkgs.python3 }:
+
+with pkgs.lib.attrsets;
 
 let
-  generic = { args ? {} }:
+  protobuf = pkgs.protobuf;
+  generic = args: unstableGeneric null args;
+  unstableGeneric = pinpath: args:
     let
+      unstable = builtins.fromJSON (builtins.readFile pinpath);
       mypython = python.override {
-        packageOverrides = self: super: {
-          numpy = super.numpy.override { blas = pkgs.mkl; };
-          pytorch = self.callPackage ./. ({} // args);
+        packageOverrides = self: super: rec {
+          numpy = if (hasAttr "mklSupport" args && args.mklSupport)
+                  then super.numpy.override { blas = pkgs.mkl; }
+                  else super.numpy;
+          stablept = (self.callPackage ./. ({ } // args));
+          pytorch =
+            if pinpath == null then stablept
+            else stablept.overrideAttrs(old: {
+              version = unstable.rev;
+              doCheck = true; # always run tests on unstable packages
+              src = pkgs.fetchFromGitHub {
+                owner  = "pytorch";
+                repo   = "pytorch";
+                rev    = unstable.rev;
+                fetchSubmodules = true;
+                sha256 = unstable.sha256;
+              };
+            });
         };
         self = mypython;
       };
     in mypython.withPackages(ps: [ ps.pytorch ]);
 
-  magma_250 = pkgs.callPackage ../deps/magma_250.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
-    mklSupport = false;
-  };
-
-  magma_250mkl = pkgs.callPackage ../deps/magma_250.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
-    mklSupport = true;
-  };
-
-  openmpi_cpu = pkgs.callPackage ../deps/openmpi.nix { cudaSupport = false; };
-  openmpi_cuda = pkgs.callPackage ../deps/openmpi.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
-    cudaSupport = true;
-  };
 in rec {
-  inherit magma_250 magma_250mkl;
-
-  pytorch = generic { };
-
-  pytorch-mkl = generic {
-    args = { mklSupport = true; };
+  pytorch-unstable = unstableGeneric ./unstable-pins/2019-12-12.json {
+      mklSupport = false;
+      cudaSupport = false;
+      buildBinaries = false;
+      openMPISupport = false;
   };
 
-  pytorch-openmpi = generic {
-    args = { openMPISupport = true; openmpi = openmpi_cpu; };
+  pytorch = generic {
+      mklSupport = false;
+      cudaSupport = false;
+      buildBinaries = false;
+      openMPISupport = false;
   };
 
-  pytorch-mkl-openmpi = generic {
-    args = { mklSupport = true; openMPISupport = true; openmpi = openmpi_cpu; };
+  pytorchWithOpenMPI = generic {
+      mklSupport = false;
+      cudaSupport = false;
+      buildBinaries = false;
+      openMPISupport = true;
+  };
+
+  pytorchWithMkl = generic {
+    mklSupport = true;
+    cudaSupport = false;
+    buildBinaries = false;
+    openMPISupport = false;
   };
 
   pytorchFull = generic {
-    args = {
       mklSupport = true;
+      cudaSupport = false;
+      buildBinaries = true;
       openMPISupport = true;
-      openmpi = openmpi_cpu;
-      buildNamedTensor = true;
+  };
+
+  pytorchWithCuda = generic rec {
+      mklSupport = false;
+      cudaSupport = true;
       buildBinaries = true;
-    };
+      openMPISupport = false;
+      magma = pkgs.magma.override { inherit mklSupport; };
   };
 
-  pytorch-cu = generic {
-    args = {
-      mklSupport = false; magma = magma_250;
+  pytorchWithCuda10 = generic rec {
+      mklSupport = false;
       cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
-      nccl = pkgs.nccl_cudatoolkit_10;
-    };
-  };
-
-  pytorch-cu-mkl = generic {
-    args = {
-      mklSupport = true; magma = magma_250mkl;
-      cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
-      nccl = pkgs.nccl_cudatoolkit_10;
-    };
-  };
-
-  pytorch-cu-mkl-openmpi = generic {
-    args = {
-      mklSupport = true; magma = magma_250mkl;
-      openMPISupport = true; openmpi = openmpi_cuda; # openmpi will be altered to use the appropriate cudatoolkit
-      cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
-      nccl = pkgs.nccl_cudatoolkit_10;
-    };
-  };
-
-  pytorchWithCuda10Full = generic {
-    args = {
-      mklSupport = true; magma = magma_250mkl;
-      openMPISupport = true; openmpi = openmpi_cuda;
-      cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
-      nccl = pkgs.nccl_cudatoolkit_10;
-      buildNamedTensor = true;
       buildBinaries = true;
-    };
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+      openMPISupport = false; openmpi = pkgs.openmpi.override { inherit cudaSupport cudatoolkit; };
+      magma = pkgs.magma.override { inherit mklSupport cudatoolkit; };
   };
 
-  pytorchWithCudaFull = generic {
-    args = {
+  pytorchWithCudaMkl = generic rec {
       mklSupport = true;
-      openMPISupport = true; openmpi = pkgs.callPackage ../deps/openmpi.nix { cudaSupport = true; };
       cudaSupport = true;
-      magma = pkgs.callPackage ../deps/magma_250.nix { mklSupport = true; };
-      buildNamedTensor = true;
       buildBinaries = true;
-    };
+      openMPISupport = false; openmpi = pkgs.openmpi.override { inherit cudaSupport; };
+      magma = pkgs.magma.override { inherit mklSupport; };
+  };
+
+  pytorchWithCuda10Mkl = generic rec {
+      mklSupport = true;
+      cudaSupport = true;
+      buildBinaries = true;
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+      openMPISupport = false; openmpi = pkgs.openmpi.override { inherit cudaSupport cudatoolkit; };
+      magma = pkgs.magma.override { inherit mklSupport cudatoolkit; };
+  };
+
+  pytorchWithCuda10Full = generic rec {
+      mklSupport = true;
+      cudaSupport = true;
+      buildBinaries = true;
+      cudatoolkit = pkgs.cudatoolkit_10_0;
+      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      nccl = pkgs.nccl_cudatoolkit_10;
+      openMPISupport = true; openmpi = pkgs.openmpi.override { inherit cudaSupport cudatoolkit; };
+      magma = pkgs.magma.override { inherit mklSupport cudatoolkit; };
+  };
+  pytorchWithCudaFull = generic rec {
+      mklSupport = true;
+      cudaSupport = true;
+      buildBinaries = true;
+      openMPISupport = true; openmpi = pkgs.openmpi.override { inherit cudaSupport; };
+      magma = pkgs.magma.override { inherit mklSupport ; };
   };
 }
 

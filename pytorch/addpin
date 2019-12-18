@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+nix-prefetch-git --fetch-submodules https://github.com/pytorch/pytorch.git | tee "unstable-pins/$(date +'%Y-%m-%d').json"
