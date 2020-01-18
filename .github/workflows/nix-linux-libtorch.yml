@@ -1,0 +1,15 @@
+name: nix-linux-libtorch
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: cachix/install-nix-action@v6
+    - name: Build
+      run: |
+        mkdir -p ~/.config/nixpkgs
+        echo  '{ allowUnfree = true; }' >  ~/.config/nixpkgs/config.nix
+        cd libtorch;nix-build -E '((import <nixpkgs>) {}).callPackages ./release.nix {}'
