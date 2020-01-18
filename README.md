@@ -38,7 +38,7 @@ Features
 
 The current features are supported:
 
-| **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     | libtorch-v1.3.1    |
+| **Python-3.6.9 support**            | pytorch-v1.1.0     | pytorch-v1.2.0     | libtorch-v1.4.0    |
 | ----------------------------------- | ------------------ | ------------------ | ------------------ |
 | vanilla                             | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | mkl+mkldnn                          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
