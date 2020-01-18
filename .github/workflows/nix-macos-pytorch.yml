@@ -1,0 +1,17 @@
+name: nix-macos
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: cachix/install-nix-action@v6
+    - name: Build
+      run: |
+        mkdir -p ~/.config/nixpkgs
+        echo  '{ allowUnfree = true; }' >  ~/.config/nixpkgs/config.nix
+        nix-env -i cachix
+        cachix use pytorch-world
+        nix-build ./release.nix -A pytorch -A pytorch-mkl

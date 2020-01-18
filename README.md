@@ -76,6 +76,6 @@ You can retrieve any of these with the following:
 
 ```
 cachix use pytorch-world
-nix-build ./release.nix -A pytorch -A pytorch36-mkl -A pytorch36-cu
+nix-build ./release.nix -A pytorch -A pytorch-mkl -A pytorch-cu
 ```
 
