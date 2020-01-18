@@ -1,4 +1,4 @@
-name: nix-macos
+name: nix-macos-pytorch
 
 on: [push, pull_request]
 
