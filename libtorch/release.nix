@@ -6,10 +6,12 @@ let
   libmklml = opts: callPackage ./mklml.nix ({
   } // opts);
   callCpu = opts: callPackage ./generic.nix ({
+    stdenv = gcc8Stdenv;
     mklml = libmklml {};
     libcxx = libcxx;
   } // opts);
   callGpu = opts: callPackage ./generic.nix ({
+    stdenv = gcc8Stdenv;
     mklml = libmklml {};
     libcxx = libcxx;
   } // opts);
