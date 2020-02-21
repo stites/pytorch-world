@@ -13,7 +13,7 @@ stdenv.mkDerivation rec {
   libcxxPath  = libcxx.outPath;
 
   propagatedBuildInputs = if stdenv.isDarwin then [ mklml libcxx ] else [];
-
+  patches = [./Dispatcher.patch];
   preFixup = stdenv.lib.optionalString stdenv.isDarwin ''
     echo "-- before fixup --"
     for f in $(ls $out/lib/*.dylib); do
