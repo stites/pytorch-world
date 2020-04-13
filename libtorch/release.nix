@@ -6,16 +6,17 @@ let
   libmklml = opts: callPackage ./mklml.nix ({
   } // opts);
   callCpu = opts: callPackage ./generic.nix ({
-    mklml = libmklml {};
+    mklml = libmklml { useIomp5 = stdenv.hostPlatform.system != "x86_64-darwin";};
     libcxx = libcxx;
   } // opts);
   callGpu = opts: callPackage ./generic.nix ({
-    mklml = libmklml {};
+    mklml = libmklml { useIomp5 = stdenv.hostPlatform.system != "x86_64-darwin";};
     libcxx = libcxx;
   } // opts);
 in
 {
-  libmklml = libmklml {};
+  libmklml = libmklml { useIomp5 = true; };
+  libmklml_without_iomp5 = libmklml { useIomp5 = false; };
   libtorch_cpu = callCpu {
     version = "1.4";
     buildtype = "cpu";
