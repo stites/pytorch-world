@@ -1,4 +1,4 @@
-{ stdenv, fetchzip
+{ stdenv, fetchzip, useIomp5
 }:
 
 stdenv.mkDerivation rec {
@@ -17,7 +17,11 @@ stdenv.mkDerivation rec {
       }
     else throw "missing url for platform ${stdenv.hostPlatform.system}";
 
-  preFixup = stdenv.lib.optionalString stdenv.isDarwin ''
+  preFixup =
+    stdenv.lib.optionalString (!useIomp5) ''
+    rm $out/lib/libiomp5.*
+    '' + 
+    stdenv.lib.optionalString stdenv.isDarwin (''
     echo "-- before fixup --"
     for f in $(ls $out/lib/*.dylib); do
         otool -L $f
@@ -25,12 +29,17 @@ stdenv.mkDerivation rec {
     for f in $(ls $out/lib/*.dylib); do
         install_name_tool -id @rpath/$(basename $f) $f || true
     done
+  '' + (stdenv.lib.optionalString useIomp5
+  ''
     install_name_tool -change @rpath/libiomp5.dylib $out/lib/libiomp5.dylib $out/lib/libmklml.dylib
+  '')
+    +
+  ''
     echo "-- after fixup --"
     for f in $(ls $out/lib/*.dylib); do
         otool -L $f
     done
-  '';
+  '');
 
   installPhase = ''
     ls $src
