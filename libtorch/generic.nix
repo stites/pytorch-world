@@ -13,8 +13,11 @@ stdenv.mkDerivation rec {
   libcxxPath  = libcxx.outPath;
 
   propagatedBuildInputs = if stdenv.isDarwin then [ mklml libcxx ] else [];
-
-  preFixup = stdenv.lib.optionalString stdenv.isDarwin ''
+  patchfile = ./Dispatcher.patch;
+  preFixup = ''
+    patch -p1 -d $out < ${patchfile}
+  '' +
+  stdenv.lib.optionalString stdenv.isDarwin ''
     echo "-- before fixup --"
     for f in $(ls $out/lib/*.dylib); do
         otool -L $f
