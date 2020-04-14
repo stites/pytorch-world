@@ -40,7 +40,7 @@ stdenv.mkDerivation rec {
 
     for i in libtorch.dylib libcaffe2_detectron_ops.dylib libcaffe2_module_test_dynamic.dylib libcaffe2_observers.dylib libshm.dylib libtorch_python.dylib ; do 
       install_name_tool -change @rpath/libmklml.dylib $mklmlPath/lib/libmklml.dylib $out/lib/$i
-      install_name_tool -change @rpath/libiomp5.dylib $mklmlPath/lib/libiomp5.dylib $out/lib/$i
+      install_name_tool -change @rpath/libiomp5.dylib $out/lib/libiomp5.dylib $out/lib/$i
       install_name_tool -change /usr/lib/libc++.1.dylib $libcxxPath/lib/libc++.1.0.dylib $out/lib/$i
     done
     install_name_tool -change /usr/lib/libc++.1.dylib $libcxxPath/lib/libc++.1.0.dylib $out/lib/libc10.dylib
