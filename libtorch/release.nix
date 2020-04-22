@@ -6,11 +6,9 @@ let
   libmklml = opts: callPackage ./mklml.nix ({
   } // opts);
   callCpu = opts: callPackage ./generic.nix ({
-    mklml = libmklml { useIomp5 = stdenv.hostPlatform.system != "x86_64-darwin";};
     libcxx = libcxx;
   } // opts);
   callGpu = opts: callPackage ./generic.nix ({
-    mklml = libmklml { useIomp5 = stdenv.hostPlatform.system != "x86_64-darwin";};
     libcxx = libcxx;
   } // opts);
 in
