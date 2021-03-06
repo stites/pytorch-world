@@ -1,5 +1,5 @@
 { stdenv, fetchzip, autoreconfHook, gettext
-, version ? "1.7", mkSrc, buildtype
+, version ? "1.8", mkSrc, buildtype
 , libcxx ? null
 }:
 
