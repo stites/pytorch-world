@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
   installPhase = ''
     ls $src
     mkdir $out
-    cp -r {$src,$out}/bin/
+    cp -fr {$src,$out}/bin/
     cp -r {$src,$out}/include/
     cp -r {$src,$out}/lib/
     cp -r {$src,$out}/share/
