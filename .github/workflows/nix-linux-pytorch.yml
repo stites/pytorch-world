@@ -14,6 +14,7 @@ jobs:
         sudo apt -y purge azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel || true
         sudo apt autoremove -y || true
         sudo apt autoclean -y || true
+        sudo rm -rf /usr/local/lib/android /usr/share/swift
         docker rmi $(docker image ls -aq)
         df -h
     - uses: actions/checkout@v1
