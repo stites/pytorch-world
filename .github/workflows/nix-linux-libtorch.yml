@@ -16,6 +16,8 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3        
     - uses: actions/checkout@v1
     - uses: cachix/install-nix-action@v13
       with:
