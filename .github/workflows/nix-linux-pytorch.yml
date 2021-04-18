@@ -9,10 +9,12 @@ jobs:
     - name: free disk space
       run: |
         sudo swapoff -a
-        sudo rm -f /swapfile
+        sudo rm -f /swapfile /mnt/swapfile
         sudo apt -y purge ghc* cabal-install* php* || true
         sudo apt autoremove -y || true
         sudo apt autoclean -y || true
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
         docker rmi $(docker image ls -aq)
         df -h
     - uses: actions/checkout@v1
