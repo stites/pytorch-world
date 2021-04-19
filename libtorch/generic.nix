@@ -1,5 +1,5 @@
 { stdenv, fetchzip, autoreconfHook, gettext
-, version ? "1.7", mkSrc, buildtype
+, version ? "1.8", mkSrc, buildtype
 , libcxx ? null
 }:
 
@@ -33,7 +33,9 @@ stdenv.mkDerivation rec {
   installPhase = ''
     ls $src
     mkdir $out
-    cp -r {$src,$out}/bin/
+    if [ -d $src/bin ] ; then
+      cp -r {$src,$out}/bin/
+    fi
     cp -r {$src,$out}/include/
     cp -r {$src,$out}/lib/
     cp -r {$src,$out}/share/

@@ -6,12 +6,25 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: free disk space
+      run: |
+        sudo swapoff -a
+        sudo rm -f /swapfile /mnt/swapfile
+        sudo apt -y purge ghc* cabal-install* php* dotnet-* llvm-* || true
+        sudo apt -y purge azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel || true
+        sudo apt autoremove -y || true
+        sudo apt autoclean -y || true
+        sudo rm -rf /usr/local/lib/android /usr/share/swift
+        docker rmi $(docker image ls -aq)
+        df -h
     - uses: actions/checkout@v1
-    - uses: cachix/install-nix-action@v6
+    - uses: cachix/install-nix-action@v13
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
     - name: Build
       run: |
         mkdir -p ~/.config/nixpkgs
         echo  '{ allowUnfree = true; }' >  ~/.config/nixpkgs/config.nix
-        nix-env -i cachix
+        nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use pytorch-world
         nix-build ./release.nix -A pytorch -A pytorch-mkl -A pytorch-cu
