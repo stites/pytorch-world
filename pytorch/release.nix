@@ -5,7 +5,11 @@ let
     let
       mypython = python.override {
         packageOverrides = self: super: {
-          numpy = super.numpy.override { blas = pkgs.mkl; };
+          numpy = super.numpy.override {
+            blas = pkgs.blas.override {
+              blasProvider = pkgs.mkl;
+            };
+          };
           pytorch = self.callPackage ./. ({} // args);
         };
         self = mypython;
@@ -13,18 +17,18 @@ let
     in mypython.withPackages(ps: [ ps.pytorch ]);
 
   magma_250 = pkgs.callPackage ../deps/magma_250.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
+    cudatoolkit = pkgs.cudatookit_10_2;
     mklSupport = false;
   };
 
   magma_250mkl = pkgs.callPackage ../deps/magma_250.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
+    cudatoolkit = pkgs.cudatookit_10_2;
     mklSupport = true;
   };
 
   openmpi_cpu = pkgs.callPackage ../deps/openmpi.nix { cudaSupport = false; };
   openmpi_cuda = pkgs.callPackage ../deps/openmpi.nix {
-    cudatoolkit = pkgs.cudatoolkit_10_0;
+    cudatoolkit = pkgs.cudatookit_10_2;
     cudaSupport = true;
   };
 in rec {
@@ -58,8 +62,8 @@ in rec {
     args = {
       mklSupport = false; magma = magma_250;
       cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      cudatoolkit = pkgs.cudatookit_10_2;
+      cudnn = pkgs.cudnn_cudatookit_10_2;
       nccl = pkgs.nccl_cudatoolkit_10;
     };
   };
@@ -68,8 +72,8 @@ in rec {
     args = {
       mklSupport = true; magma = magma_250mkl;
       cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      cudatoolkit = pkgs.cudatookit_10_2;
+      cudnn = pkgs.cudnn_cudatookit_10_2;
       nccl = pkgs.nccl_cudatoolkit_10;
     };
   };
@@ -79,8 +83,8 @@ in rec {
       mklSupport = true; magma = magma_250mkl;
       openMPISupport = true; openmpi = openmpi_cuda; # openmpi will be altered to use the appropriate cudatoolkit
       cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      cudatoolkit = pkgs.cudatookit_10_2;
+      cudnn = pkgs.cudnn_cudatookit_10_2;
       nccl = pkgs.nccl_cudatoolkit_10;
     };
   };
@@ -90,8 +94,8 @@ in rec {
       mklSupport = true; magma = magma_250mkl;
       openMPISupport = true; openmpi = openmpi_cuda;
       cudaSupport = true;
-      cudatoolkit = pkgs.cudatoolkit_10_0;
-      cudnn = pkgs.cudnn_cudatoolkit_10_0;
+      cudatoolkit = pkgs.cudatookit_10_2;
+      cudnn = pkgs.cudnn_cudatookit_10_2;
       nccl = pkgs.nccl_cudatoolkit_10;
       buildNamedTensor = true;
       buildBinaries = true;

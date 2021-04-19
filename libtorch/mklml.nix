@@ -3,17 +3,17 @@
 
 stdenv.mkDerivation rec {
   name = "libmklml";
-  version = "0.17.2";
+  version = "1.7.0";
   src =
     if stdenv.hostPlatform.system == "x86_64-linux" then
       fetchzip {
-        url = "https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz";
-        sha256 = "0g9fd97pcbzsfslj8j517jwl2rflqqsph3dny553pw62gqiy92gr";
+        url = "https://github.com/oneapi-src/oneDNN/releases/download/v1.7/dnnl_lnx_1.7.0_cpu_iomp.tgz";
+        sha256 = "0dd82xxr66w7gsgyr3jyq05vdyl2f6xncng33d3a9kvm01rnyin6";
       }
     else if stdenv.hostPlatform.system == "x86_64-darwin" then
       fetchzip {
-        url = "https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz";
-        sha256 = "01vbvp1khd118rskcaszwl0vw7z30bnwqcs88ah4fj1i9q5k7z7k";
+        url = "https://github.com/oneapi-src/oneDNN/releases/download/v1.7/dnnl_mac_1.7.0_cpu_iomp.tgz";
+        sha256 = "1vdqfg9fnpn4hzx13wcdb8cwfql98kw9rz6bchidnb01swg0m13i";
       }
     else throw "missing url for platform ${stdenv.hostPlatform.system}";
 

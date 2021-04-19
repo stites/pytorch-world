@@ -52,7 +52,7 @@ let
   #
   # This list was selected by omitting the TORCH_CUDA_ARCH_LIST parameter,
   # observing the fallback option (which selected all architectures known
-  # from cudatoolkit_10_0, pytorch-1.2, and python-3.6), and doing a binary
+  # from cudatookit_10_2, pytorch-1.2, and python-3.6), and doing a binary
   # searching to find offending architectures.
   #
   # NOTE: Because of sandboxing, this derivation can't auto-detect the hardware's
@@ -86,7 +86,7 @@ let
   ];
   cuda10ArchList = cuda9ArchList ++ [
     "7.5"
-    "7.5+PTX"  # < most recent architecture as of cudatoolkit_10_0 and pytorch-1.2.0
+    "7.5+PTX"  # < most recent architecture as of cudatookit_10_2 and pytorch-1.2.0
   ];
   final_cudaArchList =
     if !cudaSupport || cudaArchList != null
@@ -108,7 +108,7 @@ let
     "LD_LIBRARY_PATH=${cudaStub}\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ";
 
 in buildPythonPackage rec {
-  version = "1.2.0";
+  version = "1.8.1";
   pname = "pytorch";
 
   outputs = [
@@ -121,7 +121,7 @@ in buildPythonPackage rec {
     repo   = "pytorch";
     rev    = "v${version}";
     fetchSubmodules = true;
-    sha256 = "1biyq2p48chakf2xw7hazzqmr5ps1nx475ql8vkmxjg5zaa071cz";
+    sha256 = "1mss9i263bn9dprgm8hcxjwizmgb0cci5jis64847z5mzxr5q29v";
   };
 
   dontUseCmakeConfigure = true;
@@ -163,7 +163,7 @@ in buildPythonPackage rec {
   # https://github.com/pytorch/pytorch/issues/22346
   #
   # Also of interest: pytorch ignores CXXFLAGS uses CFLAGS for both C and C++:
-  # https://github.com/pytorch/pytorch/blob/v1.2.0/setup.py#L17
+  # https://github.com/pytorch/pytorch/blob/v1.8.1/setup.py#L17
   NIX_CFLAGS_COMPILE = lib.optionals (numpy.blas == mkl) [ "-Wno-error=array-bounds" ];
 
   nativeBuildInputs = [

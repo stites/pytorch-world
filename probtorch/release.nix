@@ -1,8 +1,8 @@
 { pkgs ? import ../pin/nixpkgs.nix {}, python ? pkgs.python36 }:
 
 let
-  my_cudatoolkit = pkgs.cudatoolkit_10_0;
-  my_cudnn = pkgs.cudnn_cudatoolkit_10_0;
+  my_cudatoolkit = pkgs.cudatookit_10_2;
+  my_cudnn = pkgs.cudnn_cudatookit_10_2;
   my_nccl = pkgs.nccl_cudatoolkit_10;
   mklSupport = true;
 
