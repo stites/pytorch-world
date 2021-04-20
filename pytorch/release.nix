@@ -1,4 +1,4 @@
-{ pkgs ? import ../pin/nixpkgs.nix {}, python ? pkgs.python36 }:
+{ pkgs ? import ../pin/nixpkgs.nix {}, python ? pkgs.python39 }:
 
 let
   generic = { args ? {} }:

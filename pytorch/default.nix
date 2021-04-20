@@ -7,6 +7,7 @@
   cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
   linkFarm, symlinkJoin,
+  typing-extensions,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
   ninja,
@@ -121,7 +122,7 @@ in buildPythonPackage rec {
     repo   = "pytorch";
     rev    = "v${version}";
     fetchSubmodules = true;
-    sha256 = "1mss9i263bn9dprgm8hcxjwizmgb0cci5jis64847z5mzxr5q29v";
+    sha256 = "06crpjf0kccl0mn8x11fa22rnhik7xsi81mfsw3nr1fzdaz5ni0w";
   };
 
   dontUseCmakeConfigure = true;
@@ -182,6 +183,7 @@ in buildPythonPackage rec {
     cffi
     numpy
     pyyaml
+    typing-extensions
   ] ++ lib.optionals openMPISupport [ openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing
     ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
