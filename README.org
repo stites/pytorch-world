@@ -6,9 +6,7 @@ several purposes which it has outlived:
 - build new pytorch derivations when nixpkgs PRs were slow. /Now, new nixpkg
   derivations are often very up-to-date/.
 - host libtorch derivations for hasktorch. /This has been moved to [[https://github.com/hasktorch/libtorch-nix][hasktorch/libtorch-nix]]/.
-- serve as a personal binary cache for a build-grid of pytorch. /Please join
-  [[https://github.com/nix-community/nix-data][nix-community/nix-data]] and petition to have community-hosted binary caches for
-  a pytorch workflow/.
+- serve as a personal binary cache for a build-grid of pytorch. /Please join [[https://github.com/nix-community/nix-data][nix-community/nix-data]] and petition to have community-hosted binary caches for a pytorch workflow/.
 
 This repository is now unmaintained and archived.
 
