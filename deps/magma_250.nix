@@ -6,13 +6,13 @@ assert !mklSupport || mkl != null;
 
 with stdenv.lib;
 
-let version = "2.5.0";
+let version = "2.5.2";
 
 in stdenv.mkDerivation {
   name = "magma-${version}";
   src = fetchurl {
     url = "https://icl.cs.utk.edu/projectsfiles/magma/downloads/magma-${version}.tar.gz";
-    sha256 = "0czspk93cv1fy37zyrrc9k306q4yzfxkhy1y4lj937dx8rz5rm2g";
+    sha256 = "0azh9qiqhfpz50faxpr4dqa7zdx224nj32x0cpgvq7ygnn4wk0i5";
     name = "magma-${version}.tar.gz";
   };
 

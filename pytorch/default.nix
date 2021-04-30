@@ -7,6 +7,7 @@
   cudaArchList ? null,
   fetchFromGitHub, lib, numpy, pyyaml, cffi, typing, cmake, hypothesis, numactl,
   linkFarm, symlinkJoin,
+  typing-extensions,
 
   # ninja (https://ninja-build.org) must be available to run C++ extensions tests,
   ninja,
@@ -52,7 +53,7 @@ let
   #
   # This list was selected by omitting the TORCH_CUDA_ARCH_LIST parameter,
   # observing the fallback option (which selected all architectures known
-  # from cudatoolkit_10_0, pytorch-1.2, and python-3.6), and doing a binary
+  # from cudatookit_10_2, pytorch-1.2, and python-3.6), and doing a binary
   # searching to find offending architectures.
   #
   # NOTE: Because of sandboxing, this derivation can't auto-detect the hardware's
@@ -86,7 +87,7 @@ let
   ];
   cuda10ArchList = cuda9ArchList ++ [
     "7.5"
-    "7.5+PTX"  # < most recent architecture as of cudatoolkit_10_0 and pytorch-1.2.0
+    "7.5+PTX"  # < most recent architecture as of cudatookit_10_2 and pytorch-1.2.0
   ];
   final_cudaArchList =
     if !cudaSupport || cudaArchList != null
@@ -108,7 +109,7 @@ let
     "LD_LIBRARY_PATH=${cudaStub}\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH} ";
 
 in buildPythonPackage rec {
-  version = "1.2.0";
+  version = "1.8.1";
   pname = "pytorch";
 
   outputs = [
@@ -121,7 +122,7 @@ in buildPythonPackage rec {
     repo   = "pytorch";
     rev    = "v${version}";
     fetchSubmodules = true;
-    sha256 = "1biyq2p48chakf2xw7hazzqmr5ps1nx475ql8vkmxjg5zaa071cz";
+    sha256 = "06crpjf0kccl0mn8x11fa22rnhik7xsi81mfsw3nr1fzdaz5ni0w";
   };
 
   dontUseCmakeConfigure = true;
@@ -163,7 +164,7 @@ in buildPythonPackage rec {
   # https://github.com/pytorch/pytorch/issues/22346
   #
   # Also of interest: pytorch ignores CXXFLAGS uses CFLAGS for both C and C++:
-  # https://github.com/pytorch/pytorch/blob/v1.2.0/setup.py#L17
+  # https://github.com/pytorch/pytorch/blob/v1.8.1/setup.py#L17
   NIX_CFLAGS_COMPILE = lib.optionals (numpy.blas == mkl) [ "-Wno-error=array-bounds" ];
 
   nativeBuildInputs = [
@@ -182,6 +183,7 @@ in buildPythonPackage rec {
     cffi
     numpy
     pyyaml
+    typing-extensions
   ] ++ lib.optionals openMPISupport [ openmpi ]
     ++ lib.optional (pythonOlder "3.5") typing
     ++ lib.optionals tensorboardSupport [pillow six future tensorflow-tensorboard];
